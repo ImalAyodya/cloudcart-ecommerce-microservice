@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import { UserProvider } from "./context/UserContext";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import LoginPage from "./pages/LoginPage";
@@ -36,9 +37,11 @@ function AppLayout() {
 
 function App() {
   return (
-    <Router>
-      <AppLayout />
-    </Router>
+    <UserProvider>
+      <Router>
+        <AppLayout />
+      </Router>
+    </UserProvider>
   );
 }
 
