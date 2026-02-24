@@ -11,6 +11,17 @@ import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
 import ProfilePage from "./pages/ProfilePage";
 
+// Admin Components
+import AdminLayout from "./components/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import UserManagement from "./pages/admin/UserManagement";
+import AddUser from "./pages/admin/AddUser";
+import ProductManagement from "./pages/admin/ProductManagement";
+import AddProduct from "./pages/admin/AddProduct";
+import OrderManagement from "./pages/admin/OrderManagement";
+import CreateOrder from "./pages/admin/CreateOrder";
+import PaymentManagement from "./pages/admin/PaymentManagement";
+
 function AppLayout() {
   const location = useLocation();
   const isAuthPage = location.pathname === "/" || location.pathname === "/register";
@@ -39,7 +50,22 @@ function App() {
   return (
     <UserProvider>
       <Router>
-        <AppLayout />
+        <Routes>
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="users" element={<UserManagement />} />
+            <Route path="users/add" element={<AddUser />} />
+            <Route path="products" element={<ProductManagement />} />
+            <Route path="products/add" element={<AddProduct />} />
+            <Route path="orders" element={<OrderManagement />} />
+            <Route path="orders/create" element={<CreateOrder />} />
+            <Route path="payments" element={<PaymentManagement />} />
+          </Route>
+          
+          {/* User Routes */}
+          <Route path="/*" element={<AppLayout />} />
+        </Routes>
       </Router>
     </UserProvider>
   );
