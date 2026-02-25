@@ -21,7 +21,6 @@ jobs:
 
       - name: Push Docker Image
         run: docker push ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/product-service:latest
-        run: docker push ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/product-service:latest
 
       - name: Build Frontend Image
         run: docker build -t ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/frontend:latest ./frontend
