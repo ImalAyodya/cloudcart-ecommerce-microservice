@@ -15,3 +15,16 @@ const getHealth = (req, res) => {
 };
 
 module.exports = { getHealth };
+
+//info controller
+const getInfo = (req, res) => {
+  res.status(200).json({
+    service: "Product Service",
+    author: "Sithmaka Nanayakkara",
+    version: "1.0.0",
+    timestamp: new Date().toISOString(),
+  });
+};
+
+module.exports = { getHealth, getInfo };
+
