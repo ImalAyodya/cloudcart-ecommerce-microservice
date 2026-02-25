@@ -8,7 +8,7 @@ tests
 docker-compose.yml
 Dockerfile
 .dockerignore
-*.md
+// *.md
 .vscode
 coverage
 .nyc_output
