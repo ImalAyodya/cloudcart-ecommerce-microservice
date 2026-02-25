@@ -20,9 +20,7 @@ jobs:
         run: docker build -t ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/product-service:latest ./backend/productService
 
       - name: Push Docker Image
-<<<<<<< Updated upstream
         run: docker push ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/product-service:latest
-=======
         run: docker push ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/product-service:latest
 
       - name: Build Frontend Image
@@ -30,4 +28,3 @@ jobs:
 
       - name: Push Frontend Image
         run: docker push ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/frontend:latest
->>>>>>> Stashed changes
