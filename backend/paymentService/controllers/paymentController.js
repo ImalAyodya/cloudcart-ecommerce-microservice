@@ -60,3 +60,39 @@ exports.processPayment = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+// Get payment details by ID
+exports.getPaymentById = async (req, res) => {
+  try {
+    const payment = await Payment.findById(req.params.id);
+    if (!payment) {
+      return res.status(404).json({ error: 'Payment not found' });
+    }
+    res.json(payment);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Update payment status (admin function)
+exports.updatePaymentStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const allowedStatuses = ['SUCCESS', 'FAILED', 'REFUNDED'];
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Invalid status value' });
+    }
+    const payment = await Payment.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
+    if (!payment) {
+      return res.status(404).json({ error: 'Payment not found' });
+    }
+    res.json(payment);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};

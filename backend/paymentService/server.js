@@ -1,9 +1,12 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const cors = require('cors');
 const paymentRoutes = require('./routes/paymentRoutes');
 const app = express();
 
+
 // Middleware
+app.use(cors());
 app.use(express.json());
 
 // MongoDB connection
