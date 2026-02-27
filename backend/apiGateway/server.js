@@ -34,19 +34,19 @@ app.get('/health', (req, res) => {
 });
 
 // Forward requests to microservices
-app.use('/api/:service', async (req, res) => {
-  const { service } = req.params;
+async function proxyRequest(req, res) {
+  // Extract service name from the URL: /api/{service}/...
+  const parts = req.originalUrl.split('/');
+  // parts = ['', 'api', 'products', ...]
+  const service = parts[2];
   const serviceUrl = services[service];
 
   if (!serviceUrl) {
     return res.status(404).json({ error: `Service '${service}' not found` });
   }
 
-  // Build the target URL: forward full path to the service
-  // e.g. /api/products → http://localhost:5000/api/products
-  // e.g. /api/products/health → http://localhost:5000/api/products/health
-  const remainingPath = req.originalUrl.replace(`/api/${service}`, '') || '';
-  const targetUrl = `${serviceUrl}/api/${service}${remainingPath}`;
+  // Forward the full original path to the target service
+  const targetUrl = `${serviceUrl}${req.originalUrl}`;
 
   console.log(`Forwarding ${req.method} ${req.originalUrl} → ${targetUrl}`);
 
@@ -73,7 +73,10 @@ app.use('/api/:service', async (req, res) => {
       });
     }
   }
-});
+}
+
+// Catch all /api/* requests and proxy them
+app.use('/api', proxyRequest);
 
 // 404 handler
 app.use((req, res) => {
