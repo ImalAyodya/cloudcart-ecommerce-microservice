@@ -13,9 +13,9 @@ app.use(express.json());
 // Service URLs from environment variables
 const services = {
   products: process.env.PRODUCT_SERVICE_URL || 'http://localhost:5000',
-  users: process.env.USER_SERVICE_URL || 'http://localhost:3002',
-  orders: process.env.ORDER_SERVICE_URL || 'http://localhost:3003',
-  payments: process.env.PAYMENT_SERVICE_URL || 'http://localhost:3004'
+  users: process.env.USER_SERVICE_URL || 'http://localhost:5001',
+  orders: process.env.ORDER_SERVICE_URL || 'http://localhost:5003',
+  payments: process.env.PAYMENT_SERVICE_URL || 'http://localhost:5002'
 };
 
 // Logging middleware
@@ -42,9 +42,13 @@ app.use('/api/:service', async (req, res) => {
     return res.status(404).json({ error: `Service '${service}' not found` });
   }
 
-  // Build the target URL: /api/products/health → /api/health
-  const remainingPath = req.originalUrl.replace(`/api/${service}`, '');
-  const targetUrl = `${serviceUrl}/api${remainingPath}`;
+  // Build the target URL: forward full path to the service
+  // e.g. /api/products → http://localhost:5000/api/products
+  // e.g. /api/products/health → http://localhost:5000/api/products/health
+  const remainingPath = req.originalUrl.replace(`/api/${service}`, '') || '';
+  const targetUrl = `${serviceUrl}/api/${service}${remainingPath}`;
+
+  console.log(`Forwarding ${req.method} ${req.originalUrl} → ${targetUrl}`);
 
   try {
     const response = await axios({
