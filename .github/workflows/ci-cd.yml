@@ -23,7 +23,7 @@ jobs:
         run: docker push ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/product-service:latest
 
       - name: Build Frontend Image
-        run: docker build -t ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/frontend:latest ./frontend
+        run: docker build --build-arg VITE_API_GATEWAY_URL=${{ secrets.VITE_API_GATEWAY_URL }} -t ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/frontend:latest ./frontend
 
       - name: Push Frontend Image
         run: docker push ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/frontend:latest
