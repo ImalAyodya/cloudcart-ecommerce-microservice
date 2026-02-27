@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AdminHeader from "../../components/admin/AdminHeader";
+import { createProduct } from "../../services/productService";
 
 const AddProduct = () => {
   const navigate = useNavigate();
@@ -25,12 +26,15 @@ const AddProduct = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // API call would go here: POST /products
-    console.log("Creating product:", formData);
-    alert("Product created successfully! (Demo - No backend integration)");
-    navigate("/admin/products");
+    try {
+      const result = await createProduct(formData);
+      alert("Product created successfully!");
+      navigate("/admin/products");
+    } catch (error) {
+      alert("Failed to create product: " + error.message);
+    }
   };
 
   return (
@@ -45,16 +49,7 @@ const AddProduct = () => {
           <span className="text-slate-800">Add New Product</span>
         </div>
 
-        {/* API Info */}
-        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 mb-6">
-          <div className="flex items-center gap-2">
-            <span className="bg-emerald-600 text-white text-xs font-bold px-2 py-1 rounded">POST</span>
-            <span className="font-mono text-sm text-emerald-800">/products</span>
-          </div>
-          <p className="text-sm text-emerald-600 mt-2">This form will call the Product Service to add a new product</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="max-w-3xl">
+        <form onSubmit={handleSubmit} className="w-full">
           <div className="bg-white rounded-xl shadow-sm border border-slate-200">
             <div className="p-6 border-b border-slate-200">
               <h2 className="text-lg font-semibold text-slate-800">Product Information</h2>

@@ -1,7 +1,9 @@
+import { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { UserProvider } from "./context/UserContext";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import { checkProductServiceHealth } from "./services/productService";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import HomePage from "./pages/HomePage";
@@ -47,6 +49,12 @@ function AppLayout() {
 }
 
 function App() {
+  // ── Health-check on app startup (visible in browser console) ──
+  // Calls: /api/products/health via API Gateway
+  useEffect(() => {
+    checkProductServiceHealth();
+  }, []);
+
   return (
     <UserProvider>
       <Router>
