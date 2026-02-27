@@ -27,3 +27,9 @@ jobs:
 
       - name: Push Frontend Image
         run: docker push ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/frontend:latest
+
+      - name: Build API Gateway Image
+        run: docker build -t ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/api-gateway:latest ./backend/apiGateway
+
+      - name: Push API Gateway Image
+        run: docker push ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/api-gateway:latest
