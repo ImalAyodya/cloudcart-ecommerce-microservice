@@ -8,6 +8,7 @@ import {
   CheckCircle,
   Loader2,
 } from "lucide-react";
+import { processPayment } from "../services/paymentService";
 
 const PaymentPage = () => {
   const navigate = useNavigate();
@@ -175,21 +176,13 @@ const PaymentPage = () => {
     setLoading(true);
 
     try {
-      // Simulate API call to payment service
-      const response = await fetch("http://localhost:5002/payments/process", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          orderId: orderId,
-          userId: "USER001",
-          amount: total,
-          paymentMethod: paymentMethod === "online" ? "CARD" : "COD",
-        }),
+      // Call payment service via API Gateway
+      const data = await processPayment({
+        orderId: orderId,
+        userId: "USER001",
+        amount: total,
+        paymentMethod: paymentMethod === "online" ? "CARD" : "COD",
       });
-
-      const data = await response.json();
 
       // Simulate delay for better UX
       await new Promise((resolve) => setTimeout(resolve, 1500));
