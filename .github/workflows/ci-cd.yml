@@ -22,6 +22,7 @@ jobs:
       - name: Push Product Service Image
         run: docker push ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/product-service:latest
 
+      #user service  
       - name: Build User Service Image
         run: docker build -t ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/user-service:latest ./backend/userService
 
