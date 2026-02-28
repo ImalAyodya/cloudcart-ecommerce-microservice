@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const paymentRoutes = require('./routes/paymentRoutes');
+const healthRoutes = require('./routes/healthRoutes');
 const app = express();
 
 
@@ -15,8 +16,11 @@ mongoose.connect(mongoURI)
   .then(() => console.log('MongoDB connected!'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
+// Health routes (must be before paymentRoutes to avoid /:id catching /health)
+app.use('/api/payments', healthRoutes);
+
 // Payment routes
-app.use('/payments', paymentRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Example route
 app.get('/', (req, res) => {
