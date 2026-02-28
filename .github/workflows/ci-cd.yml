@@ -33,3 +33,10 @@ jobs:
 
       - name: Push API Gateway Image
         run: docker push ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/api-gateway:latest
+
+      #payment service
+      - name: Build Payment Service Image
+        run: docker build -t ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/payment-service:latest ./backend/paymentService
+
+      - name: Push Payment Service Image
+        run: docker push ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/payment-service:latest
