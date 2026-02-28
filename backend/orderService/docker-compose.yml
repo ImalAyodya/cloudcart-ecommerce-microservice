@@ -1,0 +1,14 @@
+order-service:
+  build: ./orderService
+  ports:
+    - "5004:5004"
+  environment:
+    - PORT=5004
+    - MONGO_URI=mongodb://mongo-order:27017/orderdb
+  depends_on:
+    - mongo-order
+
+mongo-order:
+  image: mongo
+  ports:
+    - "27020:27017"
