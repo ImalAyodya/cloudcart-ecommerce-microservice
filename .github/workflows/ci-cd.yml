@@ -16,11 +16,17 @@ jobs:
       - name: Login to Azure Container Registry
         run: echo ${{ secrets.AZURE_REGISTRY_PASSWORD }} | docker login ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }} -u ${{ secrets.AZURE_REGISTRY_USERNAME }} --password-stdin
 
-      - name: Build Docker Image
+      - name: Build Product Service Image
         run: docker build -t ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/product-service:latest ./backend/productService
 
-      - name: Push Docker Image
+      - name: Push Product Service Image
         run: docker push ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/product-service:latest
+
+      - name: Build User Service Image
+        run: docker build -t ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/user-service:latest ./backend/userService
+
+      - name: Push User Service Image
+        run: docker push ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/user-service:latest
 
       - name: Build Frontend Image
         run: docker build --build-arg VITE_API_GATEWAY_URL=${{ secrets.VITE_API_GATEWAY_URL }} -t ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/frontend:latest ./frontend
