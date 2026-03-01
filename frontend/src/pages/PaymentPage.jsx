@@ -16,6 +16,7 @@ const PaymentPage = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [orderId, setOrderId] = useState("");
+  const [email, setEmail] = useState("");
 
   // Order items (mock data - in real app, fetch from Order Service)
   const [orderItems] = useState([
@@ -103,6 +104,14 @@ const PaymentPage = () => {
   const validateForm = () => {
     const newErrors = {};
 
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim()) {
+      newErrors.email = "Email address is required";
+    } else if (!emailRegex.test(email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+
     // Cardholder name validation
     if (!cardDetails.cardholderName.trim()) {
       newErrors.cardholderName = "Cardholder name is required";
@@ -158,8 +167,11 @@ const PaymentPage = () => {
 
   // Check if form is valid
   const isFormValid = () => {
-    if (paymentMethod === "cod") return true;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailValid = email.trim() && emailRegex.test(email);
+    if (paymentMethod === "cod") return emailValid;
     return (
+      emailValid &&
       cardDetails.cardholderName.trim().length >= 3 &&
       cardDetails.cardNumber.replace(/\s+/g, "").length === 16 &&
       cardDetails.expiryDate.length === 5 &&
@@ -169,7 +181,7 @@ const PaymentPage = () => {
 
   // Handle payment submission
   const handlePayment = async () => {
-    if (paymentMethod === "online" && !validateForm()) {
+    if (!validateForm()) {
       return;
     }
 
@@ -180,6 +192,7 @@ const PaymentPage = () => {
       const data = await processPayment({
         orderId: orderId,
         userId: "USER001",
+        email: email,
         amount: total,
         paymentMethod: paymentMethod === "online" ? "CARD" : "COD",
       });
@@ -303,6 +316,36 @@ const PaymentPage = () => {
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
               {/* Payment Method Selection */}
               <div className="mb-8">
+                {/* Email Address Input */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Email Address
+                  </label>
+                  <p className="text-xs text-slate-500 mb-2">
+                    Payment receipt will be sent to this email
+                  </p>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (errors.email) setErrors((prev) => ({ ...prev, email: "" }));
+                    }}
+                    placeholder="you@example.com"
+                    className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 transition-all ${
+                      errors.email
+                        ? "border-red-300 focus:ring-red-200"
+                        : "border-slate-300 focus:ring-sky-200 focus:border-sky-400"
+                    }`}
+                  />
+                  {errors.email && (
+                    <div className="flex items-center gap-1 mt-2 text-xs text-red-600">
+                      <AlertCircle className="w-3 h-3" />
+                      {errors.email}
+                    </div>
+                  )}
+                </div>
+
                 <h3 className="text-lg font-semibold text-slate-800 mb-4">
                   Select Payment Method
                 </h3>
