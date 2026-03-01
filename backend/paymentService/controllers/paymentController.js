@@ -1,4 +1,5 @@
 const Payment = require('../models/Payment');
+const { sendPaymentReceiptEmail } = require('../utils/emailService');
 
 // Generate transaction ID
 function generateTransactionId() {
@@ -8,11 +9,17 @@ function generateTransactionId() {
 // Process payment controller
 exports.processPayment = async (req, res) => {
   try {
-    const { orderId, userId, amount, paymentMethod } = req.body;
+    const { orderId, userId, email, amount, paymentMethod } = req.body;
 
     // Validate required fields
-    if (!orderId || !userId || !amount || !paymentMethod) {
+    if (!orderId || !userId || !email || !amount || !paymentMethod) {
       return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Invalid email address' });
     }
 
     // Verify amount > 0
@@ -37,6 +44,7 @@ exports.processPayment = async (req, res) => {
     const payment = new Payment({
       orderId,
       userId,
+      email,
       amount,
       paymentMethod,
       transactionId,
@@ -44,10 +52,21 @@ exports.processPayment = async (req, res) => {
     });
     await payment.save();
 
+    // Send payment receipt email (non-blocking)
+    sendPaymentReceiptEmail(email, {
+      orderId,
+      transactionId,
+      amount,
+      paymentMethod,
+      status,
+      createdAt: payment.createdAt,
+    }).catch((err) => console.error('Email send error:', err.message));
+
     // Return response
     res.status(201).json({
       orderId,
       userId,
+      email,
       amount,
       paymentMethod,
       transactionId,
