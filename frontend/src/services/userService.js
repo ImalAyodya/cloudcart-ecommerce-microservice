@@ -1,12 +1,12 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://user-service.agreeableriver-79a7139e.southeastasia.azurecontainerapps.io';
+const API_BASE_URL = import.meta.env.VITE_USER_API_URL || 'http://localhost:5000';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
-// Add token to requests
+// Add token to every request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -15,30 +15,39 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Handle 401 responses globally
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 /**
  * Login user
- * @param {string} email - User email
- * @param {string} password - User password
  */
 export const loginUser = async (email, password) => {
   try {
-    const response = await api.post('/api/users/login', { email, password });
+    const response = await api.post('/api/auth/login', { email, password });
     return response.data;
   } catch (error) {
-    throw error.response?.data || new Error('Login failed');
+    throw error.response?.data || { message: 'Login failed' };
   }
 };
 
 /**
  * Register new user
- * @param {object} userData - User registration data
  */
 export const registerUser = async (userData) => {
   try {
-    const response = await api.post('/api/users/register', userData);
+    const response = await api.post('/api/auth/register', userData);
     return response.data;
   } catch (error) {
-    throw error.response?.data || new Error('Registration failed');
+    throw error.response?.data || { message: 'Registration failed' };
   }
 };
 
@@ -47,39 +56,81 @@ export const registerUser = async (userData) => {
  */
 export const getUserProfile = async () => {
   try {
-    const response = await api.get('/api/users/profile');
+    const response = await api.get('/api/auth/profile');
     return response.data;
   } catch (error) {
-    throw error.response?.data || new Error('Failed to fetch profile');
+    throw error.response?.data || { message: 'Failed to fetch profile' };
   }
 };
 
 /**
  * Update user profile
- * @param {object} userData - Updated user data
  */
 export const updateUserProfile = async (userData) => {
   try {
-    const response = await api.put('/api/users/profile', userData);
+    const response = await api.put('/api/auth/profile', userData);
     return response.data;
   } catch (error) {
-    throw error.response?.data || new Error('Failed to update profile');
+    throw error.response?.data || { message: 'Failed to update profile' };
   }
 };
 
 /**
  * Change password
- * @param {string} oldPassword - Current password
- * @param {string} newPassword - New password
  */
 export const changePassword = async (oldPassword, newPassword) => {
   try {
-    const response = await api.post('/api/users/change-password', {
-      oldPassword,
-      newPassword,
-    });
+    const response = await api.post('/api/auth/change-password', { oldPassword, newPassword });
     return response.data;
   } catch (error) {
-    throw error.response?.data || new Error('Failed to change password');
+    throw error.response?.data || { message: 'Failed to change password' };
+  }
+};
+
+/**
+ * Get all users (Admin)
+ */
+export const getAllUsers = async () => {
+  try {
+    const response = await api.get('/api/auth/users');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch users' };
+  }
+};
+
+/**
+ * Get user by ID (Admin)
+ */
+export const getUserById = async (id) => {
+  try {
+    const response = await api.get(`/api/auth/users/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to fetch user' };
+  }
+};
+
+/**
+ * Update user by ID (Admin)
+ */
+export const updateUserById = async (id, userData) => {
+  try {
+    const response = await api.put(`/api/auth/users/${id}`, userData);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to update user' };
+  }
+};
+
+/**
+ * Delete user by ID (Admin)
+ */
+export const deleteUserById = async (id) => {
+  try {
+    const response = await api.delete(`/api/auth/users/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || { message: 'Failed to delete user' };
   }
 };

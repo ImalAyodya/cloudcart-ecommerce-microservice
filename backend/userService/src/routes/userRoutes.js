@@ -1,25 +1,31 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
 const {
-  register,
-  login,
-  me,
-  getUsers,
+  registerUser,
+  loginUser,
+  getUserProfile,
+  updateUserProfile,
+  changePassword,
+  getAllUsers,
   getUserById,
-  updateUser,
-  deleteUser,
-} = require("../controllers/userController");
-const auth = require("../middleware/auth");
+  updateUserById,
+  deleteUserById,
+} = require('../controllers/userController');
+const { protect, adminOnly } = require('../middleware/auth');
 
-// Auth routes
-router.post("/register", register);
-router.post("/login", login);
-router.get("/me", auth, me);
+// Public routes
+router.post('/register', registerUser);
+router.post('/login', loginUser);
 
-// CRUD (admin/compat)
-router.get("/", getUsers);
-router.get("/:id", getUserById);
-router.put("/:id", updateUser);
-router.delete("/:id", deleteUser);
+// Protected routes (logged-in users)
+router.get('/profile', protect, getUserProfile);
+router.put('/profile', protect, updateUserProfile);
+router.post('/change-password', protect, changePassword);
+
+// Admin routes
+router.get('/users', protect, adminOnly, getAllUsers);
+router.get('/users/:id', protect, adminOnly, getUserById);
+router.put('/users/:id', protect, adminOnly, updateUserById);
+router.delete('/users/:id', protect, adminOnly, deleteUserById);
 
 module.exports = router;

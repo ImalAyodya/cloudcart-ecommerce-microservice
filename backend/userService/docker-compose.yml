@@ -14,7 +14,7 @@ services:
       dockerfile: Dockerfile
     environment:
       - MONGO_URI=mongodb+srv://sithmaka:sithmaka1122@cluster.pvqvoqf.mongodb.net/personal_finance_tracker?retryWrites=true&w=majority
-      - JWT_SECRET=replace_with_strong_secret
+      - JWT_SECRET=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.KMUFsIDTnFmyG3nMiGM6H9FNFUROf3wh7SmqJp-QV30
       - PORT=5001
     ports:
       - "5001:5001"

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { loginUser, registerUser, getUserProfile } from '../services/userService';
+import { loginUser as loginAPI, registerUser as registerAPI, getUserProfile as getProfileAPI } from '../services/userService';
 
 const UserContext = createContext();
 
@@ -30,12 +30,12 @@ export const UserProvider = ({ children }) => {
   const fetchUserProfile = async () => {
     try {
       setLoading(true);
-      const data = await getUserProfile();
+      const data = await getProfileAPI();
       setUser(data);
       setIsAuthenticated(true);
       setError(null);
     } catch (err) {
-      console.error('Failed to fetch user profile:', err);
+      console.error('Failed to fetch profile:', err);
       localStorage.removeItem('token');
       setUser(null);
       setIsAuthenticated(false);
@@ -48,13 +48,14 @@ export const UserProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await loginUser(email, password);
+      const response = await loginAPI(email, password);
       localStorage.setItem('token', response.token);
       setUser(response.user);
       setIsAuthenticated(true);
       return response;
     } catch (err) {
-      setError(err.message || 'Login failed');
+      const message = err.message || 'Login failed';
+      setError(message);
       throw err;
     } finally {
       setLoading(false);
@@ -65,13 +66,14 @@ export const UserProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await registerUser(userData);
+      const response = await registerAPI(userData);
       localStorage.setItem('token', response.token);
       setUser(response.user);
       setIsAuthenticated(true);
       return response;
     } catch (err) {
-      setError(err.message || 'Registration failed');
+      const message = err.message || 'Registration failed';
+      setError(message);
       throw err;
     } finally {
       setLoading(false);

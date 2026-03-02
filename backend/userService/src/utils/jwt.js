@@ -1,14 +1,23 @@
-const jwt = require("jsonwebtoken");
-const { JWT_SECRET, TOKEN_EXPIRES_IN } = require("../config/env");
+const jwt = require('jsonwebtoken');
 
+/**
+ * Generate JWT token
+ * @param {string} userId - MongoDB user ID
+ * @returns {string} JWT token
+ */
 const generateToken = (userId) => {
-  return jwt.sign({ id: userId }, JWT_SECRET || "change_this_secret", {
-    expiresIn: TOKEN_EXPIRES_IN || "7d",
+  return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   });
 };
 
+/**
+ * Verify JWT token
+ * @param {string} token - JWT token
+ * @returns {object} Decoded token payload
+ */
 const verifyToken = (token) => {
-  return jwt.verify(token, JWT_SECRET || "change_this_secret");
+  return jwt.verify(token, process.env.JWT_SECRET);
 };
 
 module.exports = { generateToken, verifyToken };

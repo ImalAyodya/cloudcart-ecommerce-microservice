@@ -8,13 +8,13 @@ export default function RegisterPage() {
     email: "",
     password: "",
     confirmPassword: "",
+    role: "user",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const { register, isAuthenticated } = useUser();
   const navigate = useNavigate();
 
-  // Redirect if already logged in
   if (isAuthenticated) {
     navigate("/profile");
     return null;
@@ -46,6 +46,7 @@ export default function RegisterPage() {
         name: formData.name,
         email: formData.email,
         password: formData.password,
+        role: formData.role,
       });
       navigate("/profile");
     } catch (err) {
@@ -59,6 +60,7 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 flex items-center justify-center px-6 py-20">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          {/* Header */}
           <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-12 text-center">
             <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center mx-auto mb-4">
               <span className="text-3xl font-bold text-indigo-600">C</span>
@@ -67,6 +69,7 @@ export default function RegisterPage() {
             <p className="text-indigo-100 text-sm">Create Your Account</p>
           </div>
 
+          {/* Form */}
           <form onSubmit={handleSubmit} className="px-8 py-8 space-y-5">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
@@ -98,6 +101,24 @@ export default function RegisterPage() {
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition bg-gray-50"
               />
+            </div>
+
+            <div>
+              <label className="block text-gray-700 font-semibold mb-2 text-sm">Account Role</label>
+              <select
+                name="role"
+                value={formData.role}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition bg-gray-50 text-gray-700"
+              >
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                {formData.role === "admin"
+                  ? "Admin accounts have full system access"
+                  : "Regular user account for shopping"}
+              </p>
             </div>
 
             <div>
@@ -137,6 +158,7 @@ export default function RegisterPage() {
             </button>
           </form>
 
+          {/* Footer */}
           <div className="px-8 py-6 bg-gray-50 border-t text-center">
             <p className="text-gray-600 text-sm">
               Already have an account?{" "}
