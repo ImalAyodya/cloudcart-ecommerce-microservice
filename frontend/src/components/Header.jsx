@@ -1,60 +1,229 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { useUser } from '../context/UserContext';
+import { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  ShoppingCart,
+  User,
+  Menu,
+  X,
+  Search,
+  Heart,
+  LogOut,
+} from "lucide-react";
+import { useUser } from "../context/UserContext";
+import logo from "../images/logo.jpeg";
 
-export default function Header() {
-  const { isAuthenticated, user, logout } = useUser();
+const Header = () => {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
   const navigate = useNavigate();
+  const { isAuthenticated, user, logout } = useUser();
+
+  const isAuthPage =
+    location.pathname === "/" || location.pathname === "/register";
+
+  if (isAuthPage) return null;
+
+  const navLinks = [
+    { name: "Home", path: "/home" },
+    { name: "Products", path: "/products" },
+    { name: "About Us", path: "/about" },
+    { name: "Contact Us", path: "/contact" },
+  ];
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    navigate("/");
   };
 
   return (
-    <header className="bg-white shadow-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-6 py-4">
-        <div className="flex justify-between items-center">
-          <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-              <span className="text-white font-bold text-lg">C</span>
-            </div>
-            <h1 className="text-2xl font-bold text-indigo-600">CloudCart</h1>
-          </Link>
-
-          <nav className="flex gap-8 text-gray-600 font-medium">
-            <Link to="/" className="hover:text-indigo-600 transition">Home</Link>
-            <Link to="/products" className="hover:text-indigo-600 transition">Products</Link>
-            <Link to="/about" className="hover:text-indigo-600 transition">About</Link>
-            <Link to="/contact" className="hover:text-indigo-600 transition">Contact</Link>
-          </nav>
-
-          <div className="flex items-center gap-4">
-            {isAuthenticated ? (
-              <div className="flex items-center gap-4">
-                <span className="text-gray-600 text-sm">Welcome, <span className="font-semibold text-indigo-600">{user?.name || user?.email}</span></span>
-                <Link to="/profile" className="px-4 py-2 rounded-lg bg-indigo-100 text-indigo-600 font-medium hover:bg-indigo-200 transition">
-                  Profile
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="px-4 py-2 rounded-lg bg-red-100 text-red-600 font-medium hover:bg-red-200 transition"
-                >
-                  Logout
-                </button>
-              </div>
+    <header className="bg-white shadow-sm sticky top-0 z-50">
+      {/* Top bar */}
+      <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white text-xs py-2">
+        <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
+          <p>Free shipping on orders over $50</p>
+          <div className="flex gap-4">
+            {isAuthenticated && user ? (
+              <span>Welcome, {user.name}</span>
             ) : (
-              <div className="flex items-center gap-4">
-                <Link to="/login" className="px-4 py-2 rounded-lg bg-gray-100 text-gray-600 font-medium hover:bg-gray-200 transition">
-                  Sign In
-                </Link>
-                <Link to="/register" className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition">
-                  Sign Up
-                </Link>
-              </div>
+              <span>support@cloudcart.com</span>
             )}
+            <span>+94 76 433 5055</span>
           </div>
         </div>
       </div>
+
+      {/* Main header */}
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link to="/home" className="flex items-center gap-2">
+            <img src={logo} alt="CloudCart" className="h-10 w-10 rounded-full object-cover" />
+            <div>
+              <span className="text-xl font-bold bg-gradient-to-r from-sky-700 to-sky-500 bg-clip-text text-transparent">
+                CloudCart
+              </span>
+              <p className="text-[10px] text-slate-400 -mt-1 tracking-wider">
+                Shop Beyond Limits
+              </p>
+            </div>
+          </Link>
+
+          {/* Search bar */}
+          <div className="hidden md:flex flex-1 max-w-lg mx-8">
+            <div className="relative w-full">
+              <input
+                type="text"
+                placeholder="Search products..."
+                className="w-full pl-4 pr-10 py-2.5 border border-slate-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent bg-slate-50"
+              />
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            </div>
+          </div>
+
+          {/* Desktop nav */}
+          <nav className="hidden lg:flex items-center gap-6">
+            {navLinks.map((link) => (
+              <Link
+                key={link.name}
+                to={link.path}
+                className={`text-sm font-medium transition-colors duration-200 ${
+                  location.pathname === link.path
+                    ? "text-sky-600"
+                    : "text-slate-600 hover:text-sky-600"
+                }`}
+              >
+                {link.name}
+              </Link>
+            ))}
+          </nav>
+
+          {/* Icons */}
+          <div className="flex items-center gap-3 ml-4">
+            <Link
+              to="/home"
+              className="relative p-2 text-slate-600 hover:text-sky-600 transition-colors"
+            >
+              <Heart className="w-5 h-5" />
+              <span className="absolute -top-0.5 -right-0.5 bg-rose-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                3
+              </span>
+            </Link>
+            <Link
+              to="/home"
+              className="relative p-2 text-slate-600 hover:text-sky-600 transition-colors"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              <span className="absolute -top-0.5 -right-0.5 bg-sky-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                5
+              </span>
+            </Link>
+
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to="/profile"
+                  className="p-2 text-slate-600 hover:text-sky-600 transition-colors"
+                >
+                  <User className="w-5 h-5" />
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="p-2 text-slate-600 hover:text-rose-600 transition-colors"
+                  title="Logout"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/"
+                className="p-2 text-slate-600 hover:text-sky-600 transition-colors"
+              >
+                <User className="w-5 h-5" />
+              </Link>
+            )}
+
+            {/* Mobile menu button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 text-slate-600"
+            >
+              {mobileMenuOpen ? (
+                <X className="w-5 h-5" />
+              ) : (
+                <Menu className="w-5 h-5" />
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile menu */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden border-t border-slate-100 bg-white">
+          <div className="px-4 py-3 space-y-1">
+            {/* Mobile search */}
+            <div className="relative mb-3">
+              <input
+                type="text"
+                placeholder="Search products..."
+                className="w-full pl-4 pr-10 py-2.5 border border-slate-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-50"
+              />
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            </div>
+            {navLinks.map((link) => (
+              <Link
+                key={link.name}
+                to={link.path}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  location.pathname === link.path
+                    ? "bg-sky-50 text-sky-600"
+                    : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                {link.name}
+              </Link>
+            ))}
+
+            {/* Mobile auth links */}
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to="/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    location.pathname === "/profile"
+                      ? "bg-sky-50 text-sky-600"
+                      : "text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  My Profile
+                </Link>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  className="block w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                Sign In
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
-}
+};
+
+export default Header;
