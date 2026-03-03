@@ -180,7 +180,7 @@ const CreateOrder = () => {
                     <div key={product.id} className="flex items-center justify-between p-4 border border-slate-200 rounded-lg">
                       <div>
                         <p className="font-medium text-slate-800">{product.name}</p>
-                        <p className="text-sm text-emerald-600 font-semibold">${product.price}</p>
+                        <p className="text-sm text-emerald-600 font-semibold">LKR {product.price}</p>
                         <p className="text-xs text-slate-500">Stock: {product.stock}</p>
                       </div>
                       <button
@@ -201,7 +201,7 @@ const CreateOrder = () => {
                         <div key={product.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                           <div>
                             <p className="font-medium text-slate-800">{product.name}</p>
-                            <p className="text-sm text-slate-500">${product.price} each</p>
+                            <p className="text-sm text-slate-500">LKR {product.price} each</p>
                           </div>
                           <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2">
@@ -219,7 +219,7 @@ const CreateOrder = () => {
                                 +
                               </button>
                             </div>
-                            <p className="font-semibold w-20 text-right">${(product.price * product.qty).toFixed(2)}</p>
+                            <p className="font-semibold w-20 text-right">LKR {(product.price * product.qty).toFixed(2)}</p>
                             <button
                               onClick={() => removeProduct(product.id)}
                               className="text-red-500 hover:text-red-700"
@@ -281,9 +281,9 @@ const CreateOrder = () => {
                     <div key={product.id} className="flex items-center justify-between py-2 border-b border-slate-100">
                       <div>
                         <p className="font-medium text-slate-800">{product.name}</p>
-                        <p className="text-sm text-slate-500">Qty: {product.qty} × ${product.price}</p>
+                        <p className="text-sm text-slate-500">Qty: {product.qty} × LKR {product.price}</p>
                       </div>
-                      <p className="font-semibold text-slate-800">${(product.price * product.qty).toFixed(2)}</p>
+                      <p className="font-semibold text-slate-800">LKR {(product.price * product.qty).toFixed(2)}</p>
                     </div>
                   ))}
                 </div>
@@ -291,7 +291,7 @@ const CreateOrder = () => {
                 {/* Total */}
                 <div className="bg-purple-50 rounded-lg p-4 flex items-center justify-between">
                   <span className="text-lg font-semibold text-purple-800">Total Amount</span>
-                  <span className="text-2xl font-bold text-purple-600">${total.toFixed(2)}</span>
+                  <span className="text-2xl font-bold text-purple-600">LKR {total.toFixed(2)}</span>
                 </div>
 
                 {/* Final API Call Info */}

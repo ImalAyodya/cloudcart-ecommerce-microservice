@@ -46,7 +46,7 @@ const AdminDashboard = () => {
     },
     {
       title: "Total Payments",
-      value: "$45,678",
+      value: "LKR 45,678",
       change: "+18%",
       changeType: "positive",
       icon: (
@@ -61,11 +61,11 @@ const AdminDashboard = () => {
   ];
 
   const recentOrders = [
-    { id: "ORD-001", user: "John Doe", amount: "$150.00", status: "Completed", date: "2026-02-24" },
-    { id: "ORD-002", user: "Jane Smith", amount: "$89.99", status: "Processing", date: "2026-02-24" },
-    { id: "ORD-003", user: "Bob Wilson", amount: "$234.50", status: "Pending", date: "2026-02-23" },
-    { id: "ORD-004", user: "Alice Brown", amount: "$67.00", status: "Completed", date: "2026-02-23" },
-    { id: "ORD-005", user: "Charlie Davis", amount: "$445.00", status: "Shipped", date: "2026-02-22" },
+    { id: "ORD-001", user: "John Doe", amount: "LKR 150.00", status: "Completed", date: "2026-02-24" },
+    { id: "ORD-002", user: "Jane Smith", amount: "LKR 89.99", status: "Processing", date: "2026-02-24" },
+    { id: "ORD-003", user: "Bob Wilson", amount: "LKR 234.50", status: "Pending", date: "2026-02-23" },
+    { id: "ORD-004", user: "Alice Brown", amount: "LKR 67.00", status: "Completed", date: "2026-02-23" },
+    { id: "ORD-005", user: "Charlie Davis", amount: "LKR 445.00", status: "Shipped", date: "2026-02-22" },
   ];
 
   const serviceEndpoints = [

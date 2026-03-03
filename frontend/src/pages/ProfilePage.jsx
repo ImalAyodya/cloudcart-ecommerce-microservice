@@ -20,7 +20,7 @@ const orders = [
     id: "CC-20260218-001",
     date: "Feb 18, 2026",
     status: "Delivered",
-    total: "$349.97",
+    total: "LKR 349.97",
     items: 3,
     statusColor: "emerald",
   },
@@ -28,7 +28,7 @@ const orders = [
     id: "CC-20260210-002",
     date: "Feb 10, 2026",
     status: "Shipped",
-    total: "$129.99",
+    total: "LKR 129.99",
     items: 1,
     statusColor: "sky",
   },
@@ -36,7 +36,7 @@ const orders = [
     id: "CC-20260201-003",
     date: "Feb 01, 2026",
     status: "Processing",
-    total: "$89.99",
+    total: "LKR 89.99",
     items: 2,
     statusColor: "amber",
   },
@@ -44,7 +44,7 @@ const orders = [
     id: "CC-20260120-004",
     date: "Jan 20, 2026",
     status: "Delivered",
-    total: "$249.99",
+    total: "LKR 249.99",
     items: 1,
     statusColor: "emerald",
   },
@@ -321,19 +321,19 @@ const ProfilePage = () => {
                   {[
                     {
                       name: "Wireless Headphones Pro",
-                      price: "$249.99",
+                      price: "LKR 249.99",
                       image:
                         "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=100&h=100&fit=crop",
                     },
                     {
                       name: "Smart Fitness Watch",
-                      price: "$199.99",
+                      price: "LKR 199.99",
                       image:
                         "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=100&h=100&fit=crop",
                     },
                     {
                       name: "Running Shoes Ultra",
-                      price: "$159.99",
+                      price: "LKR 159.99",
                       image:
                         "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=100&h=100&fit=crop",
                     },

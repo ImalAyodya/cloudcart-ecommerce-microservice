@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   CreditCard,
   Lock,
@@ -7,27 +7,28 @@ import {
   AlertCircle,
   CheckCircle,
   Loader2,
+  PackageOpen,
 } from "lucide-react";
 import { processPayment } from "../services/paymentService";
+import { useUser } from "../context/UserContext";
 
 const PaymentPage = () => {
   const navigate = useNavigate();
+  const { cart, cartTotal, clearCart, user } = useUser();
   const [paymentMethod, setPaymentMethod] = useState("online");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [orderId, setOrderId] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(user?.email || "");
 
-  // Order items (mock data - in real app, fetch from Order Service)
-  const [orderItems] = useState([
-    {
-      id: 1,
-      name: "Wireless Noise Cancelling Headphones",
-      quantity: 2,
-      unitPrice: 1500,
-    },
-    { id: 2, name: "Smart Fitness Watch Pro", quantity: 1, unitPrice: 2000 },
-  ]);
+  // Redirect if cart is empty
+  useEffect(() => {
+    if (cart.length === 0) navigate("/cart");
+  }, [cart, navigate]);
+
+  // Use cart as order items
+  const orderItems = cart;
+  const total = cartTotal;
 
   // Generate Order ID on mount
   useEffect(() => {
@@ -45,9 +46,9 @@ const PaymentPage = () => {
 
   // Calculate total
   const subtotals = orderItems.map(
-    (item) => item.quantity * item.unitPrice
+    (item) => item.quantity * parseFloat(item.price)
   );
-  const total = subtotals.reduce((sum, subtotal) => sum + subtotal, 0);
+  // total already comes from cartTotal
 
   // Format card number with spaces
   const formatCardNumber = (value) => {
@@ -201,6 +202,7 @@ const PaymentPage = () => {
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       if (data.status === "SUCCESS") {
+        clearCart();
         navigate("/payment-success", {
           state: {
             transactionId: data.transactionId,
@@ -268,26 +270,43 @@ const PaymentPage = () => {
 
                 {/* Order Items */}
                 <div className="space-y-4 mb-6">
-                  {orderItems.map((item, index) => (
-                    <div
-                      key={item.id}
-                      className="flex justify-between items-start pb-4 border-b border-slate-100 last:border-0"
-                    >
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-slate-800">
-                          {item.name}
-                        </p>
-                        <p className="text-xs text-slate-500 mt-1">
-                          Qty: {item.quantity} × Rs. {item.unitPrice.toLocaleString()}
-                        </p>
+                  {orderItems.map((item, index) => {
+                    const itemId = item._id || item.id;
+                    const imageUrl = item.imageUrl || item.image;
+                    return (
+                      <div
+                        key={itemId}
+                        className="flex justify-between items-start pb-4 border-b border-slate-100 last:border-0"
+                      >
+                        <div className="flex items-center gap-3 flex-1">
+                          {imageUrl ? (
+                            <img
+                              src={imageUrl}
+                              alt={item.name}
+                              className="w-10 h-10 rounded-lg object-cover shrink-0"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+                              <PackageOpen className="w-5 h-5 text-slate-400" />
+                            </div>
+                          )}
+                          <div>
+                            <p className="text-sm font-medium text-slate-800 line-clamp-1">
+                              {item.name}
+                            </p>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              Qty: {item.quantity} × LKR {parseFloat(item.price).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0 ml-2">
+                          <p className="text-sm font-semibold text-slate-800">
+                            LKR {subtotals[index].toLocaleString()}
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-slate-800">
-                          Rs. {subtotals[index].toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Total */}
@@ -297,8 +316,8 @@ const PaymentPage = () => {
                       Total Amount
                     </span>
                     <span className="text-2xl font-bold text-sky-600">
-                      Rs. {total.toLocaleString()}
-                    </span>
+                    LKR {total.toLocaleString()}
+                  </span>
                   </div>
                 </div>
 
@@ -600,7 +619,7 @@ const PaymentPage = () => {
                   ) : (
                     <>
                       <Lock className="w-5 h-5" />
-                      Pay Rs. {total.toLocaleString()}
+                      Pay LKR {total.toLocaleString()}
                     </>
                   )}
                 </button>
