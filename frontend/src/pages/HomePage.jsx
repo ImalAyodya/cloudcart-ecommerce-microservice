@@ -224,7 +224,7 @@ const HomePage = () => {
                   <p className="text-sm font-semibold text-slate-800">
                     Free Delivery
                   </p>
-                  <p className="text-xs text-slate-400">On orders over $50</p>
+                  <p className="text-xs text-slate-400">On orders over LKR 50</p>
                 </div>
               </div>
             </div>
@@ -240,7 +240,7 @@ const HomePage = () => {
               {
                 icon: Truck,
                 title: "Free Shipping",
-                desc: "On orders over $50",
+                desc: "On orders over LKR 50",
                 color: "sky",
               },
               {

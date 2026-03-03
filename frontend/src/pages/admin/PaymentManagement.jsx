@@ -112,7 +112,7 @@ const PaymentManagement = () => {
               
             </div>
             <div className="text-right">
-              <p className="text-3xl font-bold">${totalRevenue.toFixed(2)}</p>
+              <p className="text-3xl font-bold">LKR {totalRevenue.toFixed(2)}</p>
               <p className="text-orange-200">Total Revenue</p>
             </div>
           </div>
@@ -126,15 +126,15 @@ const PaymentManagement = () => {
           </div>
           <div className="bg-white rounded-xl p-4 border border-slate-200">
             <p className="text-sm text-slate-500 mb-1">Completed</p>
-            <p className="text-2xl font-bold text-emerald-600">${totalRevenue.toFixed(2)}</p>
+            <p className="text-2xl font-bold text-emerald-600">LKR {totalRevenue.toFixed(2)}</p>
           </div>
           <div className="bg-white rounded-xl p-4 border border-slate-200">
             <p className="text-sm text-slate-500 mb-1">Pending</p>
-            <p className="text-2xl font-bold text-yellow-600">${pendingAmount.toFixed(2)}</p>
+            <p className="text-2xl font-bold text-yellow-600">LKR {pendingAmount.toFixed(2)}</p>
           </div>
           <div className="bg-white rounded-xl p-4 border border-slate-200">
             <p className="text-sm text-slate-500 mb-1">Refunded</p>
-            <p className="text-2xl font-bold text-red-600">${refundedAmount.toFixed(2)}</p>
+            <p className="text-2xl font-bold text-red-600">LKR {refundedAmount.toFixed(2)}</p>
           </div>
         </div>
 
@@ -195,7 +195,7 @@ const PaymentManagement = () => {
                       <span className="font-mono text-purple-600">{payment.orderId}</span>
                     </td>
                     <td className="py-4 px-6 text-slate-800">{payment.user}</td>
-                    <td className="py-4 px-6 font-semibold text-slate-800">${payment.amount.toFixed(2)}</td>
+                    <td className="py-4 px-6 font-semibold text-slate-800">LKR {payment.amount.toFixed(2)}</td>
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-2">
                         {payment.method === "Credit Card" && (
