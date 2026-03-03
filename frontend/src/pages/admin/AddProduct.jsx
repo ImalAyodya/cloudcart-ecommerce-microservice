@@ -14,6 +14,7 @@ const AddProduct = () => {
     sku: "",
     status: "Active",
     featured: false,
+    imageUrl: "",
   });
 
   const categories = ["Electronics", "Clothing", "Footwear", "Accessories", "Home & Garden", "Sports"];
@@ -24,6 +25,16 @@ const AddProduct = () => {
       ...formData,
       [name]: type === "checkbox" ? checked : value,
     });
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormData((prev) => ({ ...prev, imageUrl: reader.result }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSubmit = async (e) => {
@@ -184,16 +195,36 @@ const AddProduct = () => {
                 </label>
               </div>
 
-              {/* Image Upload Placeholder */}
+              {/* Image Upload */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-2">Product Image</label>
-                <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center">
-                  <svg className="w-12 h-12 mx-auto text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <p className="text-slate-500">Drag and drop image here, or click to browse</p>
-                  <p className="text-xs text-slate-400 mt-2">PNG, JPG up to 5MB</p>
+                <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-emerald-400 transition-colors cursor-pointer" onClick={() => document.getElementById('imageInput').click()}>
+                  {formData.imageUrl ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <img
+                        src={formData.imageUrl}
+                        alt="Preview"
+                        className="h-32 object-contain rounded-lg"
+                      />
+                      <span className="text-xs text-emerald-600 font-medium">Image selected — click to change</span>
+                    </div>
+                  ) : (
+                    <div>
+                      <svg className="w-12 h-12 mx-auto text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <p className="text-slate-500 text-sm">Click to browse or drag and drop</p>
+                      <p className="text-xs text-slate-400 mt-1">PNG, JPG, WEBP up to 5MB</p>
+                    </div>
+                  )}
                 </div>
+                <input
+                  id="imageInput"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageChange}
+                />
               </div>
             </div>
 
