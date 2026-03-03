@@ -26,6 +26,8 @@ import AddProduct from "./pages/admin/AddProduct";
 import OrderManagement from "./pages/admin/OrderManagement";
 import CreateOrder from "./pages/admin/CreateOrder";
 import PaymentManagement from "./pages/admin/PaymentManagement";
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminProtectedRoute from "./components/admin/AdminProtectedRoute";
 
 function AppLayout() {
   const location = useLocation();
@@ -55,8 +57,6 @@ function AppLayout() {
 }
 
 function App() {
-  // ── Health-check on app startup (visible in browser console) ──
-  // Calls: /api/products/health via API Gateway
   useEffect(() => {
     checkProductServiceHealth();
   }, []);
@@ -65,8 +65,18 @@ function App() {
     <UserProvider>
       <Router>
         <Routes>
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AdminLayout />}>
+          {/* Admin Login (public) */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+
+          {/* Admin Routes (protected) */}
+          <Route
+            path="/admin"
+            element={
+              <AdminProtectedRoute>
+                <AdminLayout />
+              </AdminProtectedRoute>
+            }
+          >
             <Route index element={<AdminDashboard />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="users/add" element={<AddUser />} />
@@ -76,7 +86,7 @@ function App() {
             <Route path="orders/create" element={<CreateOrder />} />
             <Route path="payments" element={<PaymentManagement />} />
           </Route>
-          
+
           {/* User Routes */}
           <Route path="/*" element={<AppLayout />} />
         </Routes>

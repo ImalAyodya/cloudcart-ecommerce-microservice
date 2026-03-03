@@ -9,7 +9,6 @@ import {
   EyeOff,
   ShoppingBag,
   ArrowRight,
-  Shield,
   Loader2,
 } from "lucide-react";
 
@@ -19,7 +18,6 @@ const RegisterPage = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "user",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -66,7 +64,6 @@ const RegisterPage = () => {
         name: formData.name,
         email: formData.email,
         password: formData.password,
-        role: formData.role,
       });
       navigate("/profile");
     } catch (err) {
@@ -184,24 +181,6 @@ const RegisterPage = () => {
                   required
                   className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition"
                 />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Account Role
-              </label>
-              <div className="relative">
-                <Shield className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <select
-                  name="role"
-                  value={formData.role}
-                  onChange={handleChange}
-                  className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white transition appearance-none"
-                >
-                  <option value="user">User – Regular shopping account</option>
-                  <option value="admin">Admin – Full system access</option>
-                </select>
               </div>
             </div>
 
