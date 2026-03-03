@@ -1,5 +1,7 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useUser } from "../context/UserContext";
+import { updateUserProfile } from "../services/userService";
 import {
   User,
   Mail,
@@ -51,7 +53,75 @@ const orders = [
 ];
 
 const ProfilePage = () => {
+  const { user, isAuthenticated, logout, fetchUserProfile, loading: userLoading } = useUser();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
+  const [settingsForm, setSettingsForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+  });
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!userLoading && !isAuthenticated) {
+      navigate("/login");
+    }
+  }, [isAuthenticated, userLoading, navigate]);
+
+  // Populate settings form when user data loads
+  useEffect(() => {
+    if (user) {
+      setSettingsForm({
+        name: user.name || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        address: user.address || "",
+      });
+    }
+  }, [user]);
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
+
+  const handleSettingsChange = (e) => {
+    const { name, value } = e.target;
+    setSettingsForm((prev) => ({ ...prev, [name]: value }));
+    setError("");
+    setSuccess("");
+  };
+
+  const handleSaveSettings = async () => {
+    setSaving(true);
+    setError("");
+    setSuccess("");
+    try {
+      await updateUserProfile(settingsForm);
+      await fetchUserProfile();
+      setSuccess("Profile updated successfully!");
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (err) {
+      setError(err.message || "Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Get user initials for avatar
+  const getInitials = () => {
+    if (!user?.name) return "U";
+    const parts = user.name.trim().split(" ");
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return parts[0][0].toUpperCase();
+  };
 
   const sidebarLinks = [
     { id: "overview", icon: User, label: "Overview" },
@@ -61,6 +131,22 @@ const ProfilePage = () => {
     { id: "settings", icon: Settings, label: "Settings" },
   ];
 
+  // Show loading while checking auth
+  if (userLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-sky-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-500">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Page header */}
@@ -68,7 +154,7 @@ const ProfilePage = () => {
         <div className="max-w-7xl mx-auto px-4">
           <h1 className="text-3xl font-bold text-white mb-2">My Account</h1>
           <div className="flex items-center gap-2 text-sm text-slate-300">
-            <Link to="/home" className="hover:text-sky-400">Home</Link>
+            <Link to="/" className="hover:text-sky-400">Home</Link>
             <span>/</span>
             <span className="text-sky-400">Profile</span>
           </div>
@@ -83,19 +169,19 @@ const ProfilePage = () => {
               {/* Avatar */}
               <div className="relative w-20 h-20 mx-auto mb-4">
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-sky-400 to-sky-600 flex items-center justify-center text-white text-2xl font-bold">
-                  JP
+                  {getInitials()}
                 </div>
                 <button className="absolute bottom-0 right-0 w-7 h-7 bg-sky-600 rounded-full flex items-center justify-center border-2 border-white">
                   <Camera className="w-3.5 h-3.5 text-white" />
                 </button>
               </div>
               <div className="text-center">
-                <h3 className="font-semibold text-slate-800">John Perera</h3>
+                <h3 className="font-semibold text-slate-800">{user.name || "User"}</h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  john.perera@example.com
+                  {user.email}
                 </p>
                 <p className="text-xs text-sky-600 mt-1 font-medium">
-                  Premium Member
+                  {user.role === "admin" ? "Admin" : "Premium Member"}
                 </p>
               </div>
             </div>
@@ -116,13 +202,13 @@ const ProfilePage = () => {
                 </button>
               ))}
               <hr className="my-2 border-slate-100" />
-              <Link
-                to="/"
+              <button
+                onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-rose-600 hover:bg-rose-50 transition-colors"
               >
                 <LogOut className="w-4 h-4" />
                 Sign Out
-              </Link>
+              </button>
             </nav>
           </aside>
 
@@ -159,28 +245,19 @@ const ProfilePage = () => {
                     <h3 className="font-semibold text-slate-800">
                       Personal Information
                     </h3>
-                    <button className="flex items-center gap-1.5 text-sm text-sky-600 hover:text-sky-700 font-medium">
+                    <button
+                      onClick={() => setActiveTab("settings")}
+                      className="flex items-center gap-1.5 text-sm text-sky-600 hover:text-sky-700 font-medium"
+                    >
                       <Edit3 className="w-3.5 h-3.5" /> Edit
                     </button>
                   </div>
                   <div className="grid sm:grid-cols-2 gap-5">
                     {[
-                      { icon: User, label: "Full Name", value: "John Perera" },
-                      {
-                        icon: Mail,
-                        label: "Email",
-                        value: "john.perera@example.com",
-                      },
-                      {
-                        icon: Phone,
-                        label: "Phone",
-                        value: "+94 77 123 4567",
-                      },
-                      {
-                        icon: MapPin,
-                        label: "Address",
-                        value: "No. 45, Galle Road, Colombo 03",
-                      },
+                      { icon: User, label: "Full Name", value: user.name || "Not set" },
+                      { icon: Mail, label: "Email", value: user.email || "Not set" },
+                      { icon: Phone, label: "Phone", value: user.phone || "Not set" },
+                      { icon: MapPin, label: "Address", value: user.address || "Not set" },
                     ].map((item) => (
                       <div key={item.label} className="flex items-start gap-3">
                         <div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
@@ -426,6 +503,18 @@ const ProfilePage = () => {
                 <h3 className="font-semibold text-slate-800 mb-5">
                   Account Settings
                 </h3>
+
+                {success && (
+                  <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl text-sm mb-5 flex items-center gap-2">
+                    <span>✓</span> {success}
+                  </div>
+                )}
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm mb-5 flex items-center gap-2">
+                    <span>✕</span> {error}
+                  </div>
+                )}
+
                 <div className="space-y-4 max-w-lg">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">
@@ -433,7 +522,9 @@ const ProfilePage = () => {
                     </label>
                     <input
                       type="text"
-                      defaultValue="John Perera"
+                      name="name"
+                      value={settingsForm.name}
+                      onChange={handleSettingsChange}
                       className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-50"
                     />
                   </div>
@@ -443,7 +534,9 @@ const ProfilePage = () => {
                     </label>
                     <input
                       type="email"
-                      defaultValue="john.perera@example.com"
+                      name="email"
+                      value={settingsForm.email}
+                      onChange={handleSettingsChange}
                       className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-50"
                     />
                   </div>
@@ -453,7 +546,10 @@ const ProfilePage = () => {
                     </label>
                     <input
                       type="tel"
-                      defaultValue="+94 77 123 4567"
+                      name="phone"
+                      value={settingsForm.phone}
+                      onChange={handleSettingsChange}
+                      placeholder="Enter your phone number"
                       className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-50"
                     />
                   </div>
@@ -462,16 +558,35 @@ const ProfilePage = () => {
                       Address
                     </label>
                     <textarea
-                      defaultValue="No. 45, Galle Road, Colombo 03, Sri Lanka"
+                      name="address"
+                      value={settingsForm.address}
+                      onChange={handleSettingsChange}
+                      placeholder="Enter your address"
                       rows={3}
                       className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-50 resize-none"
                     ></textarea>
                   </div>
                   <div className="flex gap-3 pt-2">
-                    <button className="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2.5 px-6 rounded-xl text-sm transition-colors">
-                      Save Changes
+                    <button
+                      onClick={handleSaveSettings}
+                      disabled={saving}
+                      className="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2.5 px-6 rounded-xl text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {saving ? "Saving..." : "Save Changes"}
                     </button>
-                    <button className="border border-slate-200 text-slate-600 py-2.5 px-6 rounded-xl text-sm hover:bg-slate-50 transition-colors">
+                    <button
+                      onClick={() => {
+                        setSettingsForm({
+                          name: user.name || "",
+                          email: user.email || "",
+                          phone: user.phone || "",
+                          address: user.address || "",
+                        });
+                        setError("");
+                        setSuccess("");
+                      }}
+                      className="border border-slate-200 text-slate-600 py-2.5 px-6 rounded-xl text-sm hover:bg-slate-50 transition-colors"
+                    >
                       Cancel
                     </button>
                   </div>

@@ -1,18 +1,47 @@
-const { verifyToken } = require("../utils/jwt");
+const jwt = require('jsonwebtoken');
+const User = require('../models/userModel');
 
-// Expects Authorization: Bearer <token>
-const authMiddleware = (req, res, next) => {
-  const auth = req.headers.authorization || req.headers.Authorization;
-  if (!auth || !auth.startsWith("Bearer ")) return res.status(401).json({ message: "No token provided" });
-
-  const token = auth.split(" ")[1];
+/**
+ * Protect routes - verify JWT token
+ */
+const protect = async (req, res, next) => {
   try {
-    const payload = verifyToken(token);
-    req.userId = payload.id;
+    let token;
+
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+
+    if (!token) {
+      return res.status(401).json({ message: 'Not authorized, no token provided' });
+    }
+
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Attach user to request
+    const user = await User.findById(decoded.id || decoded.userId).select('-password');
+    if (!user) {
+      return res.status(401).json({ message: 'Not authorized, user not found' });
+    }
+
+    req.user = user;
     next();
-  } catch (err) {
-    return res.status(401).json({ message: "Invalid token" });
+  } catch (error) {
+    console.error('Auth middleware error:', error.message);
+    return res.status(401).json({ message: 'Not authorized, token invalid' });
   }
 };
 
-module.exports = authMiddleware;
+/**
+ * Admin only middleware
+ */
+const adminOnly = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    next();
+  } else {
+    return res.status(403).json({ message: 'Access denied, admin only' });
+  }
+};
+
+module.exports = { protect, adminOnly };
