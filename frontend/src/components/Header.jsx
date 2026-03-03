@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ShoppingCart,
   User,
@@ -15,6 +15,8 @@ import logo from "../images/logo.jpeg";
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, logout, cartCount } = useUser();
 
   const isAuthPage =
     location.pathname === "/" || location.pathname === "/register";

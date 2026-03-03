@@ -24,21 +24,34 @@ export const UserProvider = ({ children }) => {
   // Check if user is logged in on mount
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (token) {
+    const storedUser = localStorage.getItem("user");
+
+    if (token && storedUser) {
+      try {
+        const parsed = JSON.parse(storedUser);
+        setUser(parsed);
+        setIsAuthenticated(true);
+        const storedCart = localStorage.getItem(cartKey(parsed));
+        setCart(storedCart ? JSON.parse(storedCart) : []);
+      } catch {
+        localStorage.removeItem("user");
+        localStorage.removeItem("token");
+      }
+      setLoading(false);
+    } else if (token) {
+      // Token exists but no stored user — fetch profile from API
       fetchUserProfile();
     } else {
       setLoading(false);
-    const storedUser = localStorage.getItem("user");
-    const token = localStorage.getItem("token");
-
-    if (storedUser && token) {
-      const parsed = JSON.parse(storedUser);
-      setUser(parsed);
-      setIsAuthenticated(true);
-      const storedCart = localStorage.getItem(cartKey(parsed));
-      setCart(storedCart ? JSON.parse(storedCart) : []);
     }
-  }
+  }, []);
+
+  // Persist cart whenever it changes
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem(cartKey(user), JSON.stringify(cart));
+    }
+  }, [cart, user]);
 
   const fetchUserProfile = async () => {
     try {
@@ -47,9 +60,13 @@ export const UserProvider = ({ children }) => {
       setUser(data);
       setIsAuthenticated(true);
       setError(null);
+      // Load cart for this user
+      const storedCart = localStorage.getItem(cartKey(data));
+      setCart(storedCart ? JSON.parse(storedCart) : []);
     } catch (err) {
       console.error('Failed to fetch profile:', err);
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
       setUser(null);
       setIsAuthenticated(false);
     } finally {
@@ -63,8 +80,12 @@ export const UserProvider = ({ children }) => {
       setError(null);
       const response = await loginAPI(email, password);
       localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
       setUser(response.user);
       setIsAuthenticated(true);
+      // Load cart for this user
+      const storedCart = localStorage.getItem(cartKey(response.user));
+      setCart(storedCart ? JSON.parse(storedCart) : []);
       return response;
     } catch (err) {
       const message = err.message || 'Login failed';
@@ -81,8 +102,10 @@ export const UserProvider = ({ children }) => {
       setError(null);
       const response = await registerAPI(userData);
       localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
       setUser(response.user);
       setIsAuthenticated(true);
+      setCart([]);
       return response;
     } catch (err) {
       const message = err.message || 'Registration failed';
@@ -91,31 +114,15 @@ export const UserProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  // Persist cart whenever it changes
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem(cartKey(user), JSON.stringify(cart));
-    }
-  }, [cart, user]);
-
-  // Login function
-  const login = (userData, token) => {
-    setUser(userData);
-    setIsAuthenticated(true);
-    localStorage.setItem("user", JSON.stringify(userData));
-    localStorage.setItem("token", token);
-    const storedCart = localStorage.getItem(cartKey(userData));
-    setCart(storedCart ? JSON.parse(storedCart) : []);
   };
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setUser(null);
     setIsAuthenticated(false);
     setError(null);
     setCart([]);
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
   };
 
   // Update user data
@@ -147,7 +154,10 @@ export const UserProvider = ({ children }) => {
 
   // Update item quantity
   const updateCartQty = (productId, quantity) => {
-    if (quantity <= 0) { removeFromCart(productId); return; }
+    if (quantity <= 0) {
+      removeFromCart(productId);
+      return;
+    }
     setCart((prev) =>
       prev.map((item) =>
         (item._id || item.id) === productId ? { ...item, quantity } : item
@@ -184,4 +194,4 @@ export const UserProvider = ({ children }) => {
   };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
-};})}
+};
