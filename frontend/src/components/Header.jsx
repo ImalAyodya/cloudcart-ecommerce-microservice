@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useUser } from "../context/UserContext";
 import {
   ShoppingCart,
   User,
@@ -13,6 +14,7 @@ import logo from "../images/logo.jpeg";
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const { cartCount, isAuthenticated } = useUser();
 
   const isAuthPage =
     location.pathname === "/" || location.pathname === "/register";
@@ -96,13 +98,15 @@ const Header = () => {
               </span>
             </Link>
             <Link
-              to="/home"
+              to="/cart"
               className="relative p-2 text-slate-600 hover:text-sky-600 transition-colors"
             >
               <ShoppingCart className="w-5 h-5" />
-              <span className="absolute -top-0.5 -right-0.5 bg-sky-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                5
-              </span>
+              {cartCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-sky-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+              )}
             </Link>
             <Link
               to="/profile"
