@@ -1,40 +1,26 @@
-import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_USER_API_URL || 'http://localhost:5001';
+import API from "../config/api";
 
-const api = axios.create({
-  baseURL: API_BASE_URL,
-});
-
-// Add token to every request
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Handle 401 responses globally
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-    }
-    return Promise.reject(error);
-  }
-);
+// Helper to get auth headers
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
 
 /**
  * Login user
  */
 export const loginUser = async (email, password) => {
   try {
-    const response = await api.post('/api/auth/login', { email, password });
-    return response.data;
+    const response = await fetch(`${API.users}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!response.ok) throw new Error("Login failed");
+    return await response.json();
   } catch (error) {
-    throw error.response?.data || { message: 'Login failed' };
+    throw { message: "Login failed" };
   }
 };
 
@@ -43,10 +29,15 @@ export const loginUser = async (email, password) => {
  */
 export const registerUser = async (userData) => {
   try {
-    const response = await api.post('/api/auth/register', userData);
-    return response.data;
+    const response = await fetch(`${API.users}/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(userData),
+    });
+    if (!response.ok) throw new Error("Registration failed");
+    return await response.json();
   } catch (error) {
-    throw error.response?.data || { message: 'Registration failed' };
+    throw { message: "Registration failed" };
   }
 };
 
@@ -55,10 +46,13 @@ export const registerUser = async (userData) => {
  */
 export const getUserProfile = async () => {
   try {
-    const response = await api.get('/api/auth/profile');
-    return response.data;
+    const response = await fetch(`${API.users}/profile`, {
+      headers: { ...getAuthHeaders() },
+    });
+    if (!response.ok) throw new Error("Failed to fetch profile");
+    return await response.json();
   } catch (error) {
-    throw error.response?.data || { message: 'Failed to fetch profile' };
+    throw { message: "Failed to fetch profile" };
   }
 };
 
@@ -67,10 +61,15 @@ export const getUserProfile = async () => {
  */
 export const updateUserProfile = async (userData) => {
   try {
-    const response = await api.put('/api/auth/profile', userData);
-    return response.data;
+    const response = await fetch(`${API.users}/profile`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify(userData),
+    });
+    if (!response.ok) throw new Error("Failed to update profile");
+    return await response.json();
   } catch (error) {
-    throw error.response?.data || { message: 'Failed to update profile' };
+    throw { message: "Failed to update profile" };
   }
 };
 
@@ -79,10 +78,15 @@ export const updateUserProfile = async (userData) => {
  */
 export const changePassword = async (oldPassword, newPassword) => {
   try {
-    const response = await api.post('/api/auth/change-password', { oldPassword, newPassword });
-    return response.data;
+    const response = await fetch(`${API.users}/change-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify({ oldPassword, newPassword }),
+    });
+    if (!response.ok) throw new Error("Failed to change password");
+    return await response.json();
   } catch (error) {
-    throw error.response?.data || { message: 'Failed to change password' };
+    throw { message: "Failed to change password" };
   }
 };
 
@@ -91,10 +95,13 @@ export const changePassword = async (oldPassword, newPassword) => {
  */
 export const getAllUsers = async () => {
   try {
-    const response = await api.get('/api/auth/users');
-    return response.data;
+    const response = await fetch(`${API.users}/users`, {
+      headers: { ...getAuthHeaders() },
+    });
+    if (!response.ok) throw new Error("Failed to fetch users");
+    return await response.json();
   } catch (error) {
-    throw error.response?.data || { message: 'Failed to fetch users' };
+    throw { message: "Failed to fetch users" };
   }
 };
 
@@ -103,10 +110,13 @@ export const getAllUsers = async () => {
  */
 export const getUserById = async (id) => {
   try {
-    const response = await api.get(`/api/auth/users/${id}`);
-    return response.data;
+    const response = await fetch(`${API.users}/users/${id}`, {
+      headers: { ...getAuthHeaders() },
+    });
+    if (!response.ok) throw new Error("Failed to fetch user");
+    return await response.json();
   } catch (error) {
-    throw error.response?.data || { message: 'Failed to fetch user' };
+    throw { message: "Failed to fetch user" };
   }
 };
 
@@ -115,10 +125,15 @@ export const getUserById = async (id) => {
  */
 export const updateUserById = async (id, userData) => {
   try {
-    const response = await api.put(`/api/auth/users/${id}`, userData);
-    return response.data;
+    const response = await fetch(`${API.users}/users/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify(userData),
+    });
+    if (!response.ok) throw new Error("Failed to update user");
+    return await response.json();
   } catch (error) {
-    throw error.response?.data || { message: 'Failed to update user' };
+    throw { message: "Failed to update user" };
   }
 };
 
@@ -127,9 +142,13 @@ export const updateUserById = async (id, userData) => {
  */
 export const deleteUserById = async (id) => {
   try {
-    const response = await api.delete(`/api/auth/users/${id}`);
-    return response.data;
+    const response = await fetch(`${API.users}/users/${id}`, {
+      method: "DELETE",
+      headers: { ...getAuthHeaders() },
+    });
+    if (!response.ok) throw new Error("Failed to delete user");
+    return await response.json();
   } catch (error) {
-    throw error.response?.data || { message: 'Failed to delete user' };
+    throw { message: "Failed to delete user" };
   }
 };
