@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log
+.env
+.git
+.gitignore
+.github
+tests
+docker-compose.yml
+Dockerfile
+.dockerignore
+.vscode
+coverage
+.nyc_output
+sonar-project.properties
+snyk-policy.json
+openapi.yaml
+*.md
