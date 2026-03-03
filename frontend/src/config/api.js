@@ -18,7 +18,7 @@ const API = {
   products: `${API_GATEWAY_URL}/api/products`,
 
   // User / Auth Service
-  users: `${API_GATEWAY_URL}/api/users`,
+  users: `${API_GATEWAY_URL}/api/auth`,
 
   // Order Service
   orders: `${API_GATEWAY_URL}/api/orders`,
