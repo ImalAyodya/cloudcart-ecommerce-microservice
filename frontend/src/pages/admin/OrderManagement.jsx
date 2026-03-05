@@ -210,7 +210,7 @@ const OrderManagement = () => {
                         )}
                       </div>
                     </td>
-                    <td className="py-4 px-6 font-semibold text-slate-800">${order.total.toFixed(2)}</td>
+                    <td className="py-4 px-6 font-semibold text-slate-800">LKR {order.total.toFixed(2)}</td>
                     <td className="py-4 px-6">
                       <span className={`text-xs font-medium px-3 py-1 rounded-full ${
                         order.status === "Completed" || order.status === "Delivered" ? "bg-emerald-100 text-emerald-700" :

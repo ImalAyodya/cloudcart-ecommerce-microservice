@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ShoppingCart,
   User,
@@ -7,12 +7,16 @@ import {
   X,
   Search,
   Heart,
+  LogOut,
 } from "lucide-react";
+import { useUser } from "../context/UserContext";
 import logo from "../images/logo.jpeg";
 
 const Header = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, logout, cartCount } = useUser();
 
   const isAuthPage =
     location.pathname === "/" || location.pathname === "/register";
@@ -26,6 +30,11 @@ const Header = () => {
     { name: "Contact Us", path: "/contact" },
   ];
 
+  const handleLogout = () => {
+    logout();
+    navigate("/");
+  };
+
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50">
       {/* Top bar */}
@@ -33,7 +42,11 @@ const Header = () => {
         <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
           <p>Free shipping on orders over $50</p>
           <div className="flex gap-4">
-            <span>support@cloudcart.com</span>
+            {isAuthenticated && user ? (
+              <span>Welcome, {user.name}</span>
+            ) : (
+              <span>support@cloudcart.com</span>
+            )}
             <span>+94 76 433 5055</span>
           </div>
         </div>
@@ -96,20 +109,41 @@ const Header = () => {
               </span>
             </Link>
             <Link
-              to="/home"
+              to="/cart"
               className="relative p-2 text-slate-600 hover:text-sky-600 transition-colors"
             >
               <ShoppingCart className="w-5 h-5" />
-              <span className="absolute -top-0.5 -right-0.5 bg-sky-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                5
-              </span>
+              {cartCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 bg-sky-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+              )}
             </Link>
-            <Link
-              to="/profile"
-              className="p-2 text-slate-600 hover:text-sky-600 transition-colors"
-            >
-              <User className="w-5 h-5" />
-            </Link>
+
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to="/profile"
+                  className="p-2 text-slate-600 hover:text-sky-600 transition-colors"
+                >
+                  <User className="w-5 h-5" />
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="p-2 text-slate-600 hover:text-rose-600 transition-colors"
+                  title="Logout"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/"
+                className="p-2 text-slate-600 hover:text-sky-600 transition-colors"
+              >
+                <User className="w-5 h-5" />
+              </Link>
+            )}
 
             {/* Mobile menu button */}
             <button
@@ -153,6 +187,40 @@ const Header = () => {
                 {link.name}
               </Link>
             ))}
+
+            {/* Mobile auth links */}
+            {isAuthenticated ? (
+              <>
+                <Link
+                  to="/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    location.pathname === "/profile"
+                      ? "bg-sky-50 text-sky-600"
+                      : "text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  My Profile
+                </Link>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    handleLogout();
+                  }}
+                  className="block w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+              >
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
       )}

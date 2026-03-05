@@ -15,6 +15,7 @@ import ProfilePage from "./pages/ProfilePage";
 import PaymentPage from "./pages/PaymentPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import PaymentFailedPage from "./pages/PaymentFailedPage";
+import CartPage from "./pages/CartPage";
 
 // Admin Components
 import AdminLayout from "./components/admin/AdminLayout";
@@ -23,9 +24,13 @@ import UserManagement from "./pages/admin/UserManagement";
 import AddUser from "./pages/admin/AddUser";
 import ProductManagement from "./pages/admin/ProductManagement";
 import AddProduct from "./pages/admin/AddProduct";
+import EditProduct from "./pages/admin/EditProduct";
+import ViewProduct from "./pages/admin/ViewProduct";
 import OrderManagement from "./pages/admin/OrderManagement";
 import CreateOrder from "./pages/admin/CreateOrder";
 import PaymentManagement from "./pages/admin/PaymentManagement";
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminProtectedRoute from "./components/admin/AdminProtectedRoute";
 
 function AppLayout() {
   const location = useLocation();
@@ -37,6 +42,7 @@ function AppLayout() {
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<LoginPage />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/products" element={<ProductsPage />} />
@@ -44,6 +50,7 @@ function AppLayout() {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/cart" element={<CartPage />} />
           <Route path="/payment" element={<PaymentPage />} />
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
           <Route path="/payment-failed" element={<PaymentFailedPage />} />
@@ -55,8 +62,6 @@ function AppLayout() {
 }
 
 function App() {
-  // ── Health-check on app startup (visible in browser console) ──
-  // Calls: /api/products/health via API Gateway
   useEffect(() => {
     checkProductServiceHealth();
   }, []);
@@ -65,18 +70,30 @@ function App() {
     <UserProvider>
       <Router>
         <Routes>
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AdminLayout />}>
+          {/* Admin Login (public) */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+
+          {/* Admin Routes (protected) */}
+          <Route
+            path="/admin"
+            element={
+              <AdminProtectedRoute>
+                <AdminLayout />
+              </AdminProtectedRoute>
+            }
+          >
             <Route index element={<AdminDashboard />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="users/add" element={<AddUser />} />
             <Route path="products" element={<ProductManagement />} />
             <Route path="products/add" element={<AddProduct />} />
+            <Route path="products/:id" element={<ViewProduct />} />
+            <Route path="products/:id/edit" element={<EditProduct />} />
             <Route path="orders" element={<OrderManagement />} />
             <Route path="orders/create" element={<CreateOrder />} />
             <Route path="payments" element={<PaymentManagement />} />
           </Route>
-          
+
           {/* User Routes */}
           <Route path="/*" element={<AppLayout />} />
         </Routes>
