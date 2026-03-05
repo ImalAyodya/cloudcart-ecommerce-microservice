@@ -1,7 +1,7 @@
-require("dotenv").config();
 const express = require("express");
-const mongoose = require("mongoose");
 const cors = require("cors");
+const { PORT } = require("./src/config/env");
+const connectDB = require("./src/config/db");
 const orderRoutes = require("./src/routes/orderRoutes");
 
 const app = express();
@@ -11,18 +11,15 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use("/", orderRoutes);
+app.use("/api/orders", orderRoutes);
+app.get("/api/orders/health", (req, res) => {
+  res.status(200).json({ status: "OK", service: "Order Service" });
+});
 
-// Database Connection
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
-    console.log("Order DB Connected");
-
-    app.listen(process.env.PORT, () => {
-      console.log(`Order Service running on port ${process.env.PORT}`);
-    });
-
-  })
-  .catch((error) => {
-    console.error("Database connection failed:", error.message);
+connectDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Order Service running on port ${PORT}`);
   });
+});
+
+module.exports = app;

@@ -23,7 +23,7 @@ const orderSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["CREATED", "CANCELLED"],
+    enum: ["CREATED", "CONFIRMED", "FAILED", "CANCELLED"],
     default: "CREATED"
   }
 }, { timestamps: true });
