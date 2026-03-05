@@ -12,38 +12,77 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 2  # Needed so git diff HEAD~1 HEAD works
+
+      # Detect which services have changed files
+      - name: Detect changed services
+        id: changes
+        run: |
+          CHANGED=$(git diff --name-only HEAD~1 HEAD)
+          echo "Changed files:"
+          echo "$CHANGED"
+
+          echo "product_service=$(echo "$CHANGED" | grep -q '^backend/productService/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "user_service=$(echo "$CHANGED" | grep -q '^backend/userService/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "api_gateway=$(echo "$CHANGED" | grep -q '^backend/apiGateway/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "payment_service=$(echo "$CHANGED" | grep -q '^backend/paymentService/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "order_service=$(echo "$CHANGED" | grep -q '^backend/orderService/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "frontend=$(echo "$CHANGED" | grep -q '^frontend/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
 
       - name: Login to Azure Container Registry
         run: echo ${{ secrets.AZURE_REGISTRY_PASSWORD }} | docker login ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }} -u ${{ secrets.AZURE_REGISTRY_USERNAME }} --password-stdin
 
+      # Product Service
       - name: Build Product Service Image
+        if: steps.changes.outputs.product_service == 'true'
         run: docker build -t ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/product-service:latest ./backend/productService
 
       - name: Push Product Service Image
+        if: steps.changes.outputs.product_service == 'true'
         run: docker push ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/product-service:latest
 
-      #user service  
+      # User Service
       - name: Build User Service Image
+        if: steps.changes.outputs.user_service == 'true'
         run: docker build -t ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/user-service:latest ./backend/userService
 
       - name: Push User Service Image
+        if: steps.changes.outputs.user_service == 'true'
         run: docker push ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/user-service:latest
 
+      # Frontend
       - name: Build Frontend Image
+        if: steps.changes.outputs.frontend == 'true'
         run: docker build --build-arg VITE_API_GATEWAY_URL=${{ secrets.VITE_API_GATEWAY_URL }} -t ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/frontend:latest ./frontend
 
       - name: Push Frontend Image
+        if: steps.changes.outputs.frontend == 'true'
         run: docker push ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/frontend:latest
 
+      # API Gateway
       - name: Build API Gateway Image
+        if: steps.changes.outputs.api_gateway == 'true'
         run: docker build -t ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/api-gateway:latest ./backend/apiGateway
 
       - name: Push API Gateway Image
+        if: steps.changes.outputs.api_gateway == 'true'
         run: docker push ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/api-gateway:latest
 
-      #payment service
+      # Payment Service
       - name: Build Payment Service Image
+        if: steps.changes.outputs.payment_service == 'true'
         run: docker build -t ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/payment-service:latest ./backend/paymentService
 
       - name: Push Payment Service Image
+        if: steps.changes.outputs.payment_service == 'true'
         run: docker push ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/payment-service:latest
+
+      # Order Service
+      - name: Build Order Service Image
+        if: steps.changes.outputs.order_service == 'true'
+        run: docker build -t ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/order-service:latest ./backend/orderService
+
+      - name: Push Order Service Image
+        if: steps.changes.outputs.order_service == 'true'
+        run: docker push ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/order-service:latest
