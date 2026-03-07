@@ -11,15 +11,28 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use("/api/orders", orderRoutes);
 app.get("/api/orders/health", (req, res) => {
   res.status(200).json({ status: "OK", service: "Order Service" });
 });
+app.use("/api/orders", orderRoutes);
 
-connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Order Service running on port ${PORT}`);
-  });
+process.on("unhandledRejection", (reason) => {
+  console.error("[Server.unhandledRejection]", reason);
 });
+
+process.on("uncaughtException", (error) => {
+  console.error("[Server.uncaughtException]", error);
+});
+
+connectDB()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Order Service running on port ${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error("[Server.startup] Failed to connect DB / start server", error);
+    process.exit(1);
+  });
 
 module.exports = app;

@@ -5,19 +5,25 @@ const {
   PAYMENT_SERVICE_URL,
 } = require("../config/env");
 
-const validateUser = async (userId) => {
-  const response = await axios.get(
-    `${USER_SERVICE_URL}/api/users/${userId}`
-  );
+const validateUser = async (authorizationHeader) => {
+  const response = await axios.get(`${USER_SERVICE_URL}/api/auth/profile`, {
+    headers: {
+      Authorization: authorizationHeader,
+    },
+  });
   return response.data;
 };
 
 const checkProductAvailability = async (productId, quantity = 1) => {
-  const response = await axios.get(
-    `${PRODUCT_SERVICE_URL}/api/products/${productId}/availability`,
-    { params: { quantity } }
-  );
-  return response.data;
+  const response = await axios.get(`${PRODUCT_SERVICE_URL}/api/products/${productId}`);
+  const product = response.data.product || response.data;
+  const stock = Number(product.stock ?? 0);
+
+  return {
+    product,
+    stock,
+    available: stock >= Number(quantity),
+  };
 };
 
 const processPayment = async (paymentData) => {
@@ -29,10 +35,12 @@ const processPayment = async (paymentData) => {
 };
 
 const reduceStock = async (productId, quantity) => {
-  await axios.post(
-    `${PRODUCT_SERVICE_URL}/api/products/${productId}/reduce-stock`,
-    { quantity }
-  );
+  const current = await checkProductAvailability(productId, quantity);
+  const updatedQty = Number(current.stock) - Number(quantity);
+
+  await axios.patch(`${PRODUCT_SERVICE_URL}/api/products/${productId}/qty`, {
+    qty: updatedQty,
+  });
 };
 
 module.exports = {
