@@ -27,8 +27,7 @@ jobs:
           node-version: 18
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v5
+        uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # auto-provided by GitHub
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}      # add this in repo Settings → Secrets
-          SONAR_HOST_URL: https://sonarcloud.io

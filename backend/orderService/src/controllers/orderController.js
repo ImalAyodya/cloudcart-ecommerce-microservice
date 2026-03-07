@@ -6,12 +6,45 @@ const {
   reduceStock
 } = require("../services/externalServices");
 
+const toErrorLogPayload = (error) => ({
+  message: error?.message,
+  stack: error?.stack,
+  upstreamStatus: error?.response?.status,
+  upstreamData: error?.response?.data,
+  upstreamUrl: error?.config?.url,
+  upstreamMethod: error?.config?.method,
+});
+
 exports.createOrder = async (req, res) => {
   try {
-    const { userId, products, paymentMethod = "CARD" } = req.body;
+    const { products, paymentMethod = "CARD" } = req.body;
+    const authHeader = req.headers.authorization;
 
-    if (!userId || !Array.isArray(products) || products.length === 0) {
-      return res.status(400).json({ message: "userId and products are required" });
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "Authorization token is required" });
+    }
+
+    if (!Array.isArray(products) || products.length === 0) {
+      return res.status(400).json({ message: "products are required" });
+    }
+
+    // Resolve user from JWT token through user service
+    const userPayload = await validateUser(authHeader);
+    const userId = String(
+      userPayload?._id ||
+      userPayload?.id ||
+      userPayload?.user?._id ||
+      userPayload?.user?.id ||
+      ""
+    );
+    const userEmail = String(userPayload?.email || userPayload?.user?.email || "");
+
+    if (!userId) {
+      return res.status(401).json({ message: "Invalid token or user not found" });
+    }
+
+    if (!userEmail) {
+      return res.status(400).json({ message: "Authenticated user email is required" });
     }
 
     for (const item of products) {
@@ -20,8 +53,7 @@ exports.createOrder = async (req, res) => {
       }
     }
 
-      // 1️⃣ Validate User
-      // await validateUser(userId); // Commented for debugging
+    // 1️⃣ User already validated via token and profile lookup
 
     let totalAmount = 0;
     const normalizedProducts = [];
@@ -55,13 +87,14 @@ exports.createOrder = async (req, res) => {
       status: "CREATED",
     });
 
-      // 3️⃣ Process payment
-      // const paymentResponse = await processPayment({
-      //   orderId: String(order._id),
-      //   userId,
-      //   amount: totalAmount,
-      //   paymentMethod,
-      // });
+    // 3️⃣ Process payment
+    const paymentResponse = await processPayment({
+      orderId: String(order._id),
+      userId,
+      email: userEmail,
+      amount: totalAmount,
+      paymentMethod,
+    });
 
       // if (paymentResponse.status !== "SUCCESS") {
       //   order.paymentStatus = "FAILED";
@@ -83,9 +116,25 @@ exports.createOrder = async (req, res) => {
       res.status(201).json({ message: "Order created", order });
 
   } catch (error) {
-    const statusCode = error.response?.status || 500;
-    const message = error.response?.data?.message || error.response?.data?.error || error.message;
-    res.status(statusCode).json({ error: message });
+    const statusCode = Number(error.response?.status) || 500;
+    const responseData = error.response?.data;
+    const message =
+      responseData?.message ||
+      responseData?.error ||
+      (typeof responseData === "string" ? responseData : null) ||
+      error.message ||
+      "Internal server error";
+
+    console.error("[OrderController.createOrder]", {
+      ...toErrorLogPayload(error),
+      requestSummary: {
+        productCount: Array.isArray(req.body?.products) ? req.body.products.length : 0,
+        paymentMethod: req.body?.paymentMethod,
+        hasAuthorizationHeader: Boolean(req.headers?.authorization),
+      },
+    });
+
+    return res.status(statusCode).json({ error: message });
   }
 };
 
@@ -97,6 +146,10 @@ exports.getOrderById = async (req, res) => {
     }
     return res.json(order);
   } catch (error) {
+    console.error("[OrderController.getOrderById]", {
+      ...toErrorLogPayload(error),
+      orderId: req.params?.id,
+    });
     return res.status(500).json({ error: error.message });
   }
 };
@@ -106,6 +159,10 @@ exports.getOrdersByUser = async (req, res) => {
     const orders = await Order.find({ userId: req.params.userId }).sort({ createdAt: -1 });
     return res.json(orders);
   } catch (error) {
+    console.error("[OrderController.getOrdersByUser]", {
+      ...toErrorLogPayload(error),
+      userId: req.params?.userId,
+    });
     return res.status(500).json({ error: error.message });
   }
 };
@@ -115,6 +172,7 @@ exports.getAllOrders = async (req, res) => {
     const orders = await Order.find().sort({ createdAt: -1 });
     return res.json(orders);
   } catch (error) {
+    console.error("[OrderController.getAllOrders]", toErrorLogPayload(error));
     return res.status(500).json({ error: error.message });
   }
 };
@@ -130,6 +188,10 @@ exports.cancelOrder = async (req, res) => {
     await order.save();
     return res.json({ message: "Order cancelled", order });
   } catch (error) {
+    console.error("[OrderController.cancelOrder]", {
+      ...toErrorLogPayload(error),
+      orderId: req.params?.id,
+    });
     return res.status(500).json({ error: error.message });
   }
 };
