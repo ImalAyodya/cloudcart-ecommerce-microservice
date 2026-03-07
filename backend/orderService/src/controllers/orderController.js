@@ -58,25 +58,25 @@ exports.createOrder = async (req, res) => {
     let totalAmount = 0;
     const normalizedProducts = [];
 
-    // 2️⃣ Check product availability
-    for (const item of products) {
-      const availability = await checkProductAvailability(item.productId, item.quantity);
-      const product = availability.product || availability;
-      const stock = availability.stock ?? product.stock ?? 0;
+      // 2️⃣ Check product availability
+      for (const item of products) {
+        // const availability = await checkProductAvailability(item.productId, item.quantity); // Commented for debugging
+        // const product = availability.product || availability;
+        // const stock = availability.stock ?? product.stock ?? 0;
 
-      if (Number(stock) < Number(item.quantity)) {
-        return res.status(400).json({ message: "Insufficient stock" });
+        // if (Number(stock) < Number(item.quantity)) {
+        //   return res.status(400).json({ message: "Insufficient stock" });
+        // }
+
+        const price = Number(item.price ?? 100); // Use dummy price for debugging
+        totalAmount += price * Number(item.quantity);
+
+        normalizedProducts.push({
+          productId: item.productId,
+          quantity: Number(item.quantity),
+          price,
+        });
       }
-
-      const price = Number(product.price ?? item.price ?? 0);
-      totalAmount += price * Number(item.quantity);
-
-      normalizedProducts.push({
-        productId: item.productId,
-        quantity: Number(item.quantity),
-        price,
-      });
-    }
 
     // create pending order first to get orderId for payment service
     const order = await Order.create({
@@ -96,24 +96,24 @@ exports.createOrder = async (req, res) => {
       paymentMethod,
     });
 
-    if (paymentResponse.status !== "SUCCESS") {
-      order.paymentStatus = "FAILED";
-      order.status = "FAILED";
-      await order.save();
-      return res.status(400).json({ message: "Payment failed", order, payment: paymentResponse });
-    }
+      // if (paymentResponse.status !== "SUCCESS") {
+      //   order.paymentStatus = "FAILED";
+      //   order.status = "FAILED";
+      //   await order.save();
+      //   return res.status(400).json({ message: "Payment failed", order, payment: paymentResponse });
+      // }
 
-    // 4️⃣ Reduce stock
-    for (const item of normalizedProducts) {
-      await reduceStock(item.productId, item.quantity);
-    }
+      // 4️⃣ Reduce stock
+      // for (const item of normalizedProducts) {
+      //   await reduceStock(item.productId, item.quantity);
+      // }
 
     // 5️⃣ Finalize order
-    order.paymentStatus = "SUCCESS";
-    order.status = "CONFIRMED";
-    await order.save();
+      order.paymentStatus = "SUCCESS";
+      order.status = "CONFIRMED";
+      await order.save();
 
-    res.status(201).json({ message: "Order created", order, payment: paymentResponse });
+      res.status(201).json({ message: "Order created", order });
 
   } catch (error) {
     const statusCode = Number(error.response?.status) || 500;

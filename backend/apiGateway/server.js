@@ -51,20 +51,14 @@ async function proxyRequest(req, res) {
   console.log(`Forwarding ${req.method} ${req.originalUrl} → ${targetUrl}`);
 
   try {
-    const forwardedHeaders = {
-      'Content-Type': req.headers['content-type'] || 'application/json',
-    };
-
-    // Preserve auth header for protected downstream endpoints.
-    if (req.headers.authorization) {
-      forwardedHeaders.Authorization = req.headers.authorization;
-    }
-
     const response = await axios({
       method: req.method,
       url: targetUrl,
       data: req.body,
-      headers: forwardedHeaders,
+      headers: {
+        'Content-Type': req.headers['content-type'] || 'application/json',
+        ...(req.headers.authorization && { Authorization: req.headers.authorization }),
+      },
       timeout: 10000,
     });
 
