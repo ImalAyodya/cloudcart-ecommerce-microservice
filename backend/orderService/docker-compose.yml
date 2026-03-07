@@ -1,14 +1,18 @@
-order-service:
-  build: ./orderService
-  ports:
-    - "5004:5004"
-  environment:
-    - PORT=5004
-    - MONGO_URI=mongodb://mongo-order:27017/orderdb
-  depends_on:
-    - mongo-order
+services:
+  order-service:
+    build: .
+    ports:
+      - "5004:5004"
+    environment:
+      - PORT=5004
+      - MONGO_URI=mongodb+srv://malmi:Malmi%40123@cluster0.fm3er6e.mongodb.net/orderDB
+      - USER_SERVICE_URL=http://host.docker.internal:5001
+      - PRODUCT_SERVICE_URL=http://host.docker.internal:5002
+      - PAYMENT_SERVICE_URL=http://host.docker.internal:5003
+    depends_on:
+      - mongo-order
 
-mongo-order:
-  image: mongo
-  ports:
-    - "27020:27017"
+  mongo-order:
+    image: mongo
+    ports:
+      - "27020:27017"

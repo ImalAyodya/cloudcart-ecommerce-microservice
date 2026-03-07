@@ -11,9 +11,20 @@ exports.processPayment = async (req, res) => {
   try {
     const { orderId, userId, email, amount, paymentMethod } = req.body;
 
-    // Validate required fields
-    if (!orderId || !userId || !email || !amount || !paymentMethod) {
-      return res.status(400).json({ error: 'Missing required fields' });
+    // Validate required fields and return exactly which ones are missing.
+    const missingFields = [];
+    if (!orderId) missingFields.push('orderId');
+    if (!userId) missingFields.push('userId');
+    if (!email) missingFields.push('email');
+    if (amount === undefined || amount === null || amount === '') missingFields.push('amount');
+    if (!paymentMethod) missingFields.push('paymentMethod');
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        error: 'Missing required fields',
+        missingFields,
+        message: `Missing required fields: ${missingFields.join(', ')}`,
+      });
     }
 
     // Validate email format
@@ -23,7 +34,7 @@ exports.processPayment = async (req, res) => {
     }
 
     // Verify amount > 0
-    if (amount <= 0) {
+    if (Number(amount) <= 0) {
       return res.status(400).json({ error: 'Amount must be greater than 0' });
     }
 
