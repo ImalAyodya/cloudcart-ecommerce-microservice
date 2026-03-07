@@ -58,6 +58,7 @@ async function proxyRequest(req, res) {
       data: req.body,
       headers: {
         'Content-Type': req.headers['content-type'] || 'application/json',
+        ...(req.headers.authorization && { Authorization: req.headers.authorization }),
       },
       timeout: 10000,
     });
