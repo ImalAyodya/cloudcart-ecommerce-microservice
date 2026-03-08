@@ -1,7 +1,13 @@
 # Payment Service Authentication Setup
 
 ## Overview
-This payment service now requires Bearer token authentication for all payment-related endpoints.
+This payment service now requires Bearer token authentication for all payment-related endpoints. The service validates tokens by calling the User Service API.
+
+## How It Works
+1. User logs in through User Service and receives a JWT token
+2. User includes the token in payment requests
+3. Payment Service validates the token by calling User Service's `/api/auth/profile` endpoint
+4. If valid, the payment operation proceeds with authenticated user data available
 
 ## Setup Instructions
 
@@ -17,10 +23,10 @@ Create a `.env` file in the `backend/paymentService` directory:
 ```env
 PORT=5002
 MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret_here
+USER_SERVICE_URL=http://localhost:5001
 ```
 
-**IMPORTANT:** The `JWT_SECRET` must be the **same** as the one used in your User Service for token verification to work.
+**IMPORTANT:** Set `USER_SERVICE_URL` to point to your running User Service instance.
 
 ### 3. How to Use the APIs
 

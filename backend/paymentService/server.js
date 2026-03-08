@@ -19,10 +19,10 @@ mongoose.connect(mongoURI)
   .catch((err) => console.error('MongoDB connection error:', err));
 
 // Health routes (must be before paymentRoutes to avoid /:id catching /health)
-app.use('/payments', healthRoutes);
+app.use('/api/payments', healthRoutes);
 
 // Payment routes (now protected with authentication)
-app.use('/payments', paymentRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Example route
 app.get('/', (req, res) => {
