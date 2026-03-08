@@ -14,17 +14,20 @@ import { useUser } from "../context/UserContext";
 
 const PaymentPage = () => {
   const navigate = useNavigate();
-  const { cart, cartTotal, clearCart, user } = useUser();
+  const { cart, cartTotal, clearCart, user, isAuthenticated } = useUser();
   const [paymentMethod, setPaymentMethod] = useState("online");
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [orderId, setOrderId] = useState("");
   const [email, setEmail] = useState(user?.email || "");
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
-  // Redirect if cart is empty
+  // Redirect if cart is empty (but not during payment processing)
   useEffect(() => {
-    if (cart.length === 0) navigate("/cart");
-  }, [cart, navigate]);
+    if (cart.length === 0 && !isProcessingPayment && !loading) {
+      navigate("/cart");
+    }
+  }, [cart, navigate, isProcessingPayment, loading]);
 
   // Use cart as order items
   const orderItems = cart;
@@ -113,53 +116,56 @@ const PaymentPage = () => {
       newErrors.email = "Please enter a valid email address";
     }
 
-    // Cardholder name validation
-    if (!cardDetails.cardholderName.trim()) {
-      newErrors.cardholderName = "Cardholder name is required";
-    } else if (cardDetails.cardholderName.trim().length < 3) {
-      newErrors.cardholderName = "Name must be at least 3 characters";
-    } else if (!/^[a-zA-Z\s]+$/.test(cardDetails.cardholderName)) {
-      newErrors.cardholderName = "Only letters and spaces allowed";
-    }
-
-    // Card number validation
-    const cardNumberDigits = cardDetails.cardNumber.replace(/\s+/g, "");
-    if (!cardNumberDigits) {
-      newErrors.cardNumber = "Card number is required";
-    } else if (cardNumberDigits.length !== 16) {
-      newErrors.cardNumber = "Card number must be 16 digits";
-    } else if (!/^\d+$/.test(cardNumberDigits)) {
-      newErrors.cardNumber = "Only numeric values allowed";
-    }
-
-    // Expiry date validation
-    if (!cardDetails.expiryDate) {
-      newErrors.expiryDate = "Expiry date is required";
-    } else {
-      const [month, year] = cardDetails.expiryDate.split("/");
-      const monthNum = parseInt(month, 10);
-      const yearNum = parseInt("20" + year, 10);
-      const currentDate = new Date();
-      const currentYear = currentDate.getFullYear();
-      const currentMonth = currentDate.getMonth() + 1;
-
-      if (!month || !year || month.length !== 2 || year.length !== 2) {
-        newErrors.expiryDate = "Format must be MM/YY";
-      } else if (monthNum < 1 || monthNum > 12) {
-        newErrors.expiryDate = "Month must be between 01-12";
-      } else if (
-        yearNum < currentYear ||
-        (yearNum === currentYear && monthNum < currentMonth)
-      ) {
-        newErrors.expiryDate = "Card has expired";
+    // Only validate card details if online payment is selected
+    if (paymentMethod === "online") {
+      // Cardholder name validation
+      if (!cardDetails.cardholderName.trim()) {
+        newErrors.cardholderName = "Cardholder name is required";
+      } else if (cardDetails.cardholderName.trim().length < 3) {
+        newErrors.cardholderName = "Name must be at least 3 characters";
+      } else if (!/^[a-zA-Z\s]+$/.test(cardDetails.cardholderName)) {
+        newErrors.cardholderName = "Only letters and spaces allowed";
       }
-    }
 
-    // CVV validation
-    if (!cardDetails.cvv) {
-      newErrors.cvv = "CVV is required";
-    } else if (cardDetails.cvv.length !== 3) {
-      newErrors.cvv = "CVV must be 3 digits";
+      // Card number validation
+      const cardNumberDigits = cardDetails.cardNumber.replace(/\s+/g, "");
+      if (!cardNumberDigits) {
+        newErrors.cardNumber = "Card number is required";
+      } else if (cardNumberDigits.length !== 16) {
+        newErrors.cardNumber = "Card number must be 16 digits";
+      } else if (!/^\d+$/.test(cardNumberDigits)) {
+        newErrors.cardNumber = "Only numeric values allowed";
+      }
+
+      // Expiry date validation
+      if (!cardDetails.expiryDate) {
+        newErrors.expiryDate = "Expiry date is required";
+      } else {
+        const [month, year] = cardDetails.expiryDate.split("/");
+        const monthNum = parseInt(month, 10);
+        const yearNum = parseInt("20" + year, 10);
+        const currentDate = new Date();
+        const currentYear = currentDate.getFullYear();
+        const currentMonth = currentDate.getMonth() + 1;
+
+        if (!month || !year || month.length !== 2 || year.length !== 2) {
+          newErrors.expiryDate = "Format must be MM/YY";
+        } else if (monthNum < 1 || monthNum > 12) {
+          newErrors.expiryDate = "Month must be between 01-12";
+        } else if (
+          yearNum < currentYear ||
+          (yearNum === currentYear && monthNum < currentMonth)
+        ) {
+          newErrors.expiryDate = "Card has expired";
+        }
+      }
+
+      // CVV validation
+      if (!cardDetails.cvv) {
+        newErrors.cvv = "CVV is required";
+      } else if (cardDetails.cvv.length !== 3) {
+        newErrors.cvv = "CVV must be 3 digits";
+      }
     }
 
     setErrors(newErrors);
@@ -182,27 +188,61 @@ const PaymentPage = () => {
 
   // Handle payment submission
   const handlePayment = async () => {
+    console.log("=== Payment Started ===");
+    
+    // Check if user is authenticated
+    if (!isAuthenticated || !user) {
+      console.error("User not authenticated");
+      alert("Please login to continue with payment");
+      navigate("/login");
+      return;
+    }
+
     if (!validateForm()) {
+      console.log("Form validation failed");
       return;
     }
 
     setLoading(true);
+    setIsProcessingPayment(true);
 
     try {
+      console.log("Sending payment request...");
+      
       // Call payment service via API Gateway
       const data = await processPayment({
         orderId: orderId,
-        userId: "USER001",
+        userId: user?._id || user?.id,
         email: email,
         amount: total,
         paymentMethod: paymentMethod === "online" ? "CARD" : "COD",
       });
 
+      console.log("Payment response:", data);
+
+      // Check if there's an error in the response
+      if (data.error) {
+        console.error("Payment API error:", data.error);
+        setIsProcessingPayment(false);
+        navigate("/payment-failed", {
+          state: {
+            reason: data.error || "Payment processing failed",
+            amount: total,
+            orderId: orderId,
+          },
+        });
+        return;
+      }
+
       // Simulate delay for better UX
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
+      // Check payment status
       if (data.status === "SUCCESS") {
+        console.log("Payment SUCCESS");
         clearCart();
+        // Don't set isProcessingPayment to false - let component unmount naturally
+        // This prevents the useEffect from redirecting to /cart
         navigate("/payment-success", {
           state: {
             transactionId: data.transactionId,
@@ -211,10 +251,22 @@ const PaymentPage = () => {
             orderId: orderId,
           },
         });
-      } else {
+      } else if (data.status === "FAILED") {
+        console.log("Payment FAILED");
+        setIsProcessingPayment(false);
         navigate("/payment-failed", {
           state: {
-            reason: "Payment processing failed",
+            reason: "Payment gateway declined the transaction",
+            amount: total,
+            orderId: orderId,
+          },
+        });
+      } else {
+        console.log("Unknown status:", data.status);
+        setIsProcessingPayment(false);
+        navigate("/payment-failed", {
+          state: {
+            reason: "Unknown payment status",
             amount: total,
             orderId: orderId,
           },
@@ -222,15 +274,17 @@ const PaymentPage = () => {
       }
     } catch (error) {
       console.error("Payment error:", error);
+      setIsProcessingPayment(false);
       navigate("/payment-failed", {
         state: {
-          reason: "Network error occurred",
+          reason: error.message || "Network error occurred",
           amount: total,
           orderId: orderId,
         },
       });
     } finally {
       setLoading(false);
+      console.log("=== Payment Ended ===");
     }
   };
 

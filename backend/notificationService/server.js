@@ -17,7 +17,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const healthRoutes = require('./routes/healthRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 5004;
+const PORT = process.env.PORT || 5003;
 
 // Middleware
 app.use(cors());

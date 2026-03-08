@@ -98,21 +98,21 @@ const PaymentSuccessPage = () => {
             </div>
 
             {/* Action Buttons */}
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-3">
               <button
-                onClick={() => navigate("/home")}
-                className="flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-sky-600 to-sky-500 hover:from-sky-700 hover:to-sky-600 text-white rounded-xl font-semibold transition-all shadow-lg shadow-sky-500/25"
+                onClick={() => navigate("/products")}
+                className="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-sky-600 to-sky-500 hover:from-sky-700 hover:to-sky-600 text-white rounded-xl font-semibold transition-all shadow-lg shadow-sky-500/25"
               >
-                <Home className="w-5 h-5" />
-                Back to Home
+                Shop More Products
+                <ArrowRight className="w-5 h-5" />
               </button>
               
               <button
-                onClick={() => navigate("/products")}
-                className="flex items-center justify-center gap-2 px-6 py-3.5 border-2 border-slate-300 hover:border-sky-500 hover:bg-sky-50 text-slate-700 hover:text-sky-700 rounded-xl font-semibold transition-all"
+                onClick={() => navigate("/home")}
+                className="w-full flex items-center justify-center gap-2 px-6 py-3.5 border-2 border-slate-300 hover:border-slate-400 hover:bg-slate-50 text-slate-700 rounded-xl font-semibold transition-all"
               >
-                Continue Shopping
-                <ArrowRight className="w-5 h-5" />
+                <Home className="w-5 h-5" />
+                Back to Home
               </button>
             </div>
           </div>

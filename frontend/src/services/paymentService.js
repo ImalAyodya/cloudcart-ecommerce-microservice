@@ -23,14 +23,29 @@ export const checkPaymentServiceHealth = async () => {
 // Process a payment
 export const processPayment = async (paymentData) => {
   try {
+    const token = localStorage.getItem("token");
+    
+    if (!token) {
+      throw new Error("Authentication required. Please log in.");
+    }
+    
     const response = await fetch(`${API.payments}/process`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
       },
       body: JSON.stringify(paymentData),
     });
+    
     const data = await response.json();
+    
+    // If response is not ok, but we got data with error, return it
+    if (!response.ok) {
+      console.error("❌ Payment API error:", data.error || data.message);
+      return data; // Return error data to be handled in PaymentPage
+    }
+    
     return data;
   } catch (error) {
     console.error("❌ Payment processing failed:", error.message);
@@ -41,7 +56,12 @@ export const processPayment = async (paymentData) => {
 // Get payment by ID
 export const getPaymentById = async (paymentId) => {
   try {
-    const response = await fetch(`${API.payments}/${paymentId}`);
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${API.payments}/${paymentId}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
+    });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     return data;

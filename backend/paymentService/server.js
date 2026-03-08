@@ -7,12 +7,13 @@ const healthRoutes = require('./routes/healthRoutes');
 const app = express();
 
 
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 
 // MongoDB connection
-const mongoURI = 'mongodb+srv://sithmaka:sithmaka1122@cluster.pvqvoqf.mongodb.net/personal_finance_tracker?retryWrites=true&w=majority'; // Change as needed
+const mongoURI = process.env.MONGO_URI || 'mongodb+srv://sithmaka:sithmaka1122@cluster.pvqvoqf.mongodb.net/personal_finance_tracker?retryWrites=true&w=majority'; // Change as needed
 mongoose.connect(mongoURI)
   .then(() => console.log('MongoDB connected!'))
   .catch((err) => console.error('MongoDB connection error:', err));
@@ -20,7 +21,7 @@ mongoose.connect(mongoURI)
 // Health routes (must be before paymentRoutes to avoid /:id catching /health)
 app.use('/api/payments', healthRoutes);
 
-// Payment routes
+// Payment routes (now protected with authentication)
 app.use('/api/payments', paymentRoutes);
 
 // Example route
