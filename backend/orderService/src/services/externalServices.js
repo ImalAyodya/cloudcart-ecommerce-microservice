@@ -34,6 +34,13 @@ const processPayment = async (paymentData) => {
   return response.data;
 };
 
+const getPaymentByTransactionId = async (transactionId) => {
+  const response = await axios.get(
+    `${PAYMENT_SERVICE_URL}/api/payments/transaction/${encodeURIComponent(transactionId)}`
+  );
+  return response.data;
+};
+
 const reduceStock = async (productId, quantity) => {
   const current = await checkProductAvailability(productId, quantity);
   const updatedQty = Number(current.stock) - Number(quantity);
@@ -47,5 +54,6 @@ module.exports = {
   validateUser,
   checkProductAvailability,
   processPayment,
+  getPaymentByTransactionId,
   reduceStock
 };
