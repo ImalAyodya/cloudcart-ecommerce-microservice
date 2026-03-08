@@ -13,9 +13,17 @@ import {
   Truck,
 } from "lucide-react";
 import { useUser } from "../context/UserContext";
-import { getUserById } from "../services/userService";
+import { getUserProfile } from "../services/userService";
 import { createOrder } from "../services/orderService";
 import { processPayment } from "../services/paymentService";
+
+const normalizePaymentMethod = (method) => {
+  const upper = (method || "").toString().trim().toUpperCase();
+  if (upper === "CARD" || upper === "COD") return upper;
+  if (upper.includes("CASH")) return "COD";
+  if (upper.includes("CARD")) return "CARD";
+  return "";
+};
 
 const OrderCheckoutPage = () => {
   const navigate = useNavigate();
@@ -23,6 +31,12 @@ const OrderCheckoutPage = () => {
   const { cart, clearCart, user, isAuthenticated } = useUser();
 
   const buyNowItem = location.state?.buyNowItem || null;
+  const paymentFromState = location.state?.payment || null;
+  const transactionIdFromState =
+    location.state?.transactionId || paymentFromState?.transactionId || "";
+  const paymentMethodFromState = normalizePaymentMethod(
+    location.state?.paymentMethod || paymentFromState?.paymentMethod
+  );
 
   const checkoutItems = useMemo(() => {
     if (buyNowItem) {
@@ -44,9 +58,9 @@ const OrderCheckoutPage = () => {
 
   useEffect(() => {
     const fetchCustomerDetails = async () => {
-      if (!userId) return;
+      if (!isAuthenticated) return;
       try {
-        const data = await getUserById(userId);
+        const data = await getUserProfile();
         setCustomer((prev) => ({
           ...prev,
           fullName: data?.name || prev.fullName,
@@ -55,13 +69,15 @@ const OrderCheckoutPage = () => {
           address: data?.address || prev.address,
         }));
       } catch {
-        // Keep local user/context values when API lookup fails.
+        // Keep local user/context values when profile lookup fails.
       }
     };
 
     fetchCustomerDetails();
-  }, [userId]);
-  const [paymentMethod, setPaymentMethod] = useState("CARD");
+  }, [isAuthenticated]);
+  const [paymentMethod, setPaymentMethod] = useState(
+    paymentMethodFromState || "CARD"
+  );
   const [placingOrder, setPlacingOrder] = useState(false);
   const [error, setError] = useState("");
   const [errors, setErrors] = useState({});
@@ -127,25 +143,41 @@ const OrderCheckoutPage = () => {
     setError("");
 
     try {
-      const paymentResponse = await processPayment({
-        orderId: `ORD${Date.now()}`,
-        userId: userId || "USER001",
-        email: customer.email.trim(),
-        amount: Number(totalAmount.toFixed(2)),
-        paymentMethod,
-      });
+      let paymentResponse = paymentFromState || null;
+      let finalTransactionId = transactionIdFromState;
+      let finalPaymentMethod =
+        paymentMethodFromState || normalizePaymentMethod(paymentMethod);
 
-      if (paymentResponse?.status !== "SUCCESS") {
-        throw new Error(paymentResponse?.message || "Payment processing failed");
+      // If payment was not done on /payment page, process it here.
+      if (!finalTransactionId) {
+        paymentResponse = await processPayment({
+          orderId: `ORD${Date.now()}`,
+          userId: userId || "USER001",
+          email: customer.email.trim(),
+          amount: Number(totalAmount.toFixed(2)),
+          paymentMethod: finalPaymentMethod || paymentMethod,
+        });
+
+        if (paymentResponse?.status !== "SUCCESS") {
+          throw new Error(paymentResponse?.message || "Payment processing failed");
+        }
+
+        finalTransactionId = paymentResponse?.transactionId;
+        if (!finalTransactionId) {
+          throw new Error("transactionId is required from payment response");
+        }
+
+        finalPaymentMethod =
+          normalizePaymentMethod(paymentResponse?.paymentMethod) ||
+          finalPaymentMethod;
       }
 
-      const transactionId = paymentResponse?.transactionId;
-      if (!transactionId) {
+      if (!finalTransactionId) {
         throw new Error("transactionId is required from payment response");
       }
 
       const data = await createOrder({
-        transactionId,
+        transactionId: finalTransactionId,
         products,
       });
 
@@ -158,12 +190,13 @@ const OrderCheckoutPage = () => {
       navigate("/order-success", {
         state: {
           order: savedOrder,
+          payment: paymentResponse,
           items: checkoutItems,
           totalAmount,
           shippingFee,
           customer,
-          paymentMethod,
-          transactionId,
+          paymentMethod: finalPaymentMethod || "N/A",
+          transactionId: finalTransactionId,
         },
       });
     } catch (err) {

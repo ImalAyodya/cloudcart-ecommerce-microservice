@@ -240,15 +240,16 @@ const PaymentPage = () => {
       // Check payment status
       if (data.status === "SUCCESS") {
         console.log("Payment SUCCESS");
-        clearCart();
+        // clearCart();
         // Don't set isProcessingPayment to false - let component unmount naturally
         // This prevents the useEffect from redirecting to /cart
-        navigate("/payment-success", {
+        navigate("/checkout", {
           state: {
+            payment: data,
             transactionId: data.transactionId,
             amount: total,
-            paymentMethod: paymentMethod === "online" ? "Card" : "Cash on Delivery",
-            orderId: orderId,
+            paymentMethod: data.paymentMethod,
+            orderId: data.orderId || orderId,
           },
         });
       } else if (data.status === "FAILED") {
