@@ -1,6 +1,10 @@
 const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema({
+  OrderId: {
+    type: String,
+    index: { unique: true, sparse: true }
+  },
   userId: {
     type: String,
     required: true
@@ -15,6 +19,10 @@ const orderSchema = new mongoose.Schema({
   totalAmount: {
     type: Number,
     required: true
+  },
+  transactionId: {
+    type: String,
+    default: null
   },
   paymentStatus: {
     type: String,
