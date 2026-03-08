@@ -1,4 +1,5 @@
 const Order = require("../models/Order");
+const OrderSequence = require("../models/OrderSequence");
 const {
   validateUser,
   checkProductAvailability,
@@ -14,6 +15,34 @@ const toErrorLogPayload = (error) => ({
   upstreamUrl: error?.config?.url,
   upstreamMethod: error?.config?.method,
 });
+
+const extractTransactionId = (paymentResponse) => {
+  const rawTransactionId =
+    paymentResponse?.transactionId ||
+    paymentResponse?.payment?.transactionId ||
+    paymentResponse?.data?.transactionId ||
+    paymentResponse?.transaction?.id ||
+    paymentResponse?.payment?.transaction?.id ||
+    "";
+
+  return String(rawTransactionId || "").trim();
+};
+
+const generateOrderId = async () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const prefix = `PO${year}${month}`;
+
+  const sequenceDoc = await OrderSequence.findOneAndUpdate(
+    { prefix },
+    { $inc: { seq: 1 } },
+    { new: true, upsert: true, setDefaultsOnInsert: true }
+  );
+
+  const sequencePart = String(sequenceDoc.seq).padStart(3, "0");
+  return `${prefix}__${sequencePart}`;
+};
 
 exports.createOrder = async (req, res) => {
   try {
@@ -78,8 +107,11 @@ exports.createOrder = async (req, res) => {
         });
       }
 
+    const generatedOrderId = await generateOrderId();
+
     // create pending order first to get orderId for payment service
     const order = await Order.create({
+      OrderId: generatedOrderId,
       userId,
       products: normalizedProducts,
       totalAmount,
@@ -89,12 +121,22 @@ exports.createOrder = async (req, res) => {
 
     // 3️⃣ Process payment
     const paymentResponse = await processPayment({
-      orderId: String(order._id),
+      orderId: order.OrderId,
       userId,
       email: userEmail,
       amount: totalAmount,
       paymentMethod,
     });
+
+    const transactionId = extractTransactionId(paymentResponse);
+    if (!transactionId) {
+      return res.status(502).json({
+        error: "Payment service did not return transactionId",
+        payment: paymentResponse,
+      });
+    }
+
+    order.transactionId = transactionId;
 
       // if (paymentResponse.status !== "SUCCESS") {
       //   order.paymentStatus = "FAILED";
@@ -113,7 +155,7 @@ exports.createOrder = async (req, res) => {
       order.status = "CONFIRMED";
       await order.save();
 
-      res.status(201).json({ message: "Order created", order });
+      res.status(201).json({ message: "Order created", order, transactionId });
 
   } catch (error) {
     const statusCode = Number(error.response?.status) || 500;
@@ -134,7 +176,12 @@ exports.createOrder = async (req, res) => {
       },
     });
 
-    return res.status(statusCode).json({ error: message });
+    const errorResponse = { error: message };
+    if (Array.isArray(responseData?.missingFields)) {
+      errorResponse.missingFields = responseData.missingFields;
+    }
+
+    return res.status(statusCode).json(errorResponse);
   }
 };
 
