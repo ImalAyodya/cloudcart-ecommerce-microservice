@@ -5,6 +5,9 @@ const paymentController = require('../controllers/paymentController');
 // POST /payments/process
 router.post('/process', paymentController.processPayment);
 
+// GET /payments/transaction/:transactionId
+router.get('/transaction/:transactionId', paymentController.getPaymentByTransactionId);
+
 // GET /payments/:id
 router.get('/:id', paymentController.getPaymentById);
 

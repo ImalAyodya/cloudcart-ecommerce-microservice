@@ -1,9 +1,8 @@
 const Order = require("../models/Order");
-const OrderSequence = require("../models/OrderSequence");
 const {
   validateUser,
   checkProductAvailability,
-  processPayment,
+  getPaymentByTransactionId,
   reduceStock
 } = require("../services/externalServices");
 
@@ -28,25 +27,96 @@ const extractTransactionId = (paymentResponse) => {
   return String(rawTransactionId || "").trim();
 };
 
-const generateOrderId = async () => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const prefix = `PO${year}${month}`;
+const normalizeOrderDocument = (orderDoc) =>
+  typeof orderDoc?.toObject === "function" ? orderDoc.toObject() : orderDoc;
 
-  const sequenceDoc = await OrderSequence.findOneAndUpdate(
-    { prefix },
-    { $inc: { seq: 1 } },
-    { new: true, upsert: true, setDefaultsOnInsert: true }
+const resolveProductName = async (productId, quantity, productNameCache) => {
+  if (!productId) {
+    return "";
+  }
+
+  if (!productNameCache.has(productId)) {
+    const namePromise = (async () => {
+      try {
+        const availability = await checkProductAvailability(productId, quantity || 1);
+        const product = availability?.product || availability;
+        return String(product?.name || "").trim();
+      } catch (error) {
+        console.warn("[OrderController.resolveProductName]", {
+          ...toErrorLogPayload(error),
+          productId,
+        });
+        return "";
+      }
+    })();
+
+    productNameCache.set(productId, namePromise);
+  }
+
+  return productNameCache.get(productId);
+};
+
+const toProductWithName = (productItem, resolvedName) => {
+  const safeName = String(resolvedName || "").trim();
+  if (safeName) {
+    return {
+      ...productItem,
+      productName: safeName,
+      name: safeName,
+    };
+  }
+
+  return {
+    ...productItem,
+    productName: null,
+    name: String(productItem?.name || "").trim() || null,
+  };
+};
+
+const attachProductNamesToOrder = async (order, productNameCache = new Map()) => {
+  const orderPayload = normalizeOrderDocument(order);
+
+  if (!orderPayload || !Array.isArray(orderPayload.products) || orderPayload.products.length === 0) {
+    return orderPayload;
+  }
+
+  orderPayload.products = await Promise.all(
+    orderPayload.products.map(async (productItem) => {
+      const productId = String(productItem?.productId || "").trim();
+      if (!productId) {
+        return toProductWithName(productItem, "");
+      }
+
+      const existingName = String(
+        productItem?.productName || productItem?.name || ""
+      ).trim();
+
+      if (existingName) {
+        return toProductWithName(productItem, existingName);
+      }
+
+      const resolvedName = await resolveProductName(
+        productId,
+        productItem?.quantity,
+        productNameCache
+      );
+      return toProductWithName(productItem, resolvedName);
+    })
   );
 
-  const sequencePart = String(sequenceDoc.seq).padStart(3, "0");
-  return `${prefix}__${sequencePart}`;
+  return orderPayload;
+};
+
+const attachProductNamesToOrders = async (orders = []) => {
+  const productNameCache = new Map();
+  return Promise.all(
+    orders.map((order) => attachProductNamesToOrder(order, productNameCache))
+  );
 };
 
 exports.createOrder = async (req, res) => {
   try {
-    const { products, paymentMethod = "CARD" } = req.body;
+    const { products, transactionId: requestedTransactionId } = req.body;
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -55,6 +125,11 @@ exports.createOrder = async (req, res) => {
 
     if (!Array.isArray(products) || products.length === 0) {
       return res.status(400).json({ message: "products are required" });
+    }
+
+    const requestedTransactionIdTrimmed = String(requestedTransactionId || "").trim();
+    if (!requestedTransactionIdTrimmed) {
+      return res.status(400).json({ message: "transactionId is required" });
     }
 
     // Resolve user from JWT token through user service
@@ -87,75 +162,116 @@ exports.createOrder = async (req, res) => {
     let totalAmount = 0;
     const normalizedProducts = [];
 
-      // 2️⃣ Check product availability
-      for (const item of products) {
-        // const availability = await checkProductAvailability(item.productId, item.quantity); // Commented for debugging
-        // const product = availability.product || availability;
-        // const stock = availability.stock ?? product.stock ?? 0;
+    // 2) Check product availability and resolve authoritative price from product service
+    for (const item of products) {
+      const availability = await checkProductAvailability(item.productId, item.quantity);
+      const product = availability?.product || availability;
+      const stock = Number(availability?.stock ?? product?.stock ?? 0);
 
-        // if (Number(stock) < Number(item.quantity)) {
-        //   return res.status(400).json({ message: "Insufficient stock" });
-        // }
-
-        const price = Number(item.price ?? 100); // Use dummy price for debugging
-        totalAmount += price * Number(item.quantity);
-
-        normalizedProducts.push({
-          productId: item.productId,
-          quantity: Number(item.quantity),
-          price,
+      if (Number(stock) < Number(item.quantity)) {
+        return res.status(400).json({
+          message: `Insufficient stock for product ${item.productId}`,
         });
       }
 
-    const generatedOrderId = await generateOrderId();
+      const price = Number(product?.price);
+      if (!Number.isFinite(price) || price < 0) {
+        return res.status(400).json({
+          message: `Invalid price for product ${item.productId}`,
+        });
+      }
 
-    // create pending order first to get orderId for payment service
-    const order = await Order.create({
-      OrderId: generatedOrderId,
-      userId,
-      products: normalizedProducts,
-      totalAmount,
-      paymentStatus: "PENDING",
-      status: "CREATED",
-    });
+      const quantity = Number(item.quantity);
+      const productName = String(product?.name || item.productName || item.name || "").trim();
+      totalAmount += price * quantity;
 
-    // 3️⃣ Process payment
-    const paymentResponse = await processPayment({
-      orderId: order.OrderId,
-      userId,
-      email: userEmail,
-      amount: totalAmount,
-      paymentMethod,
-    });
-
-    const transactionId = extractTransactionId(paymentResponse);
-    if (!transactionId) {
-      return res.status(502).json({
-        error: "Payment service did not return transactionId",
-        payment: paymentResponse,
+      normalizedProducts.push({
+        productId: item.productId,
+        quantity,
+        price,
+        ...(productName ? { productName } : {}),
       });
     }
 
-    order.transactionId = transactionId;
+    // 3) Use existing payment record from transactionId
+    let paymentDetails;
+    try {
+      paymentDetails = await getPaymentByTransactionId(requestedTransactionIdTrimmed);
+    } catch (lookupError) {
+      const lookupStatus = Number(lookupError?.response?.status) || 502;
+      const lookupMessage =
+        lookupError?.response?.data?.error ||
+        lookupError?.response?.data?.message ||
+        lookupError?.message ||
+        "Payment lookup failed";
 
-      // if (paymentResponse.status !== "SUCCESS") {
-      //   order.paymentStatus = "FAILED";
-      //   order.status = "FAILED";
-      //   await order.save();
-      //   return res.status(400).json({ message: "Payment failed", order, payment: paymentResponse });
-      // }
+      return res.status(502).json({
+        error: "Unable to resolve payment by transactionId",
+        status: lookupStatus,
+        details: lookupMessage,
+      });
+    }
 
-      // 4️⃣ Reduce stock
-      // for (const item of normalizedProducts) {
-      //   await reduceStock(item.productId, item.quantity);
-      // }
+    const transactionId = String(paymentDetails?.transactionId || "").trim();
+    const paymentOrderNumber = String(paymentDetails?.orderId || "").trim();
+    const paymentStatus = String(paymentDetails?.status || "").trim().toUpperCase();
+    const paymentAmount = Number(paymentDetails?.amount);
 
-    // 5️⃣ Finalize order
-      order.paymentStatus = "SUCCESS";
-      order.status = "CONFIRMED";
-      await order.save();
+    if (!transactionId) {
+      return res.status(502).json({
+        error: "Payment record does not contain transactionId",
+        payment: paymentDetails,
+      });
+    }
 
-      res.status(201).json({ message: "Order created", order, transactionId });
+    if (!paymentOrderNumber) {
+      return res.status(502).json({
+        error: "Payment record does not contain orderId",
+        payment: paymentDetails,
+      });
+    }
+
+    if (Number.isFinite(paymentAmount) && Math.abs(paymentAmount - totalAmount) > 0.01) {
+      return res.status(400).json({
+        error: "Payment amount does not match calculated order total",
+        paymentAmount,
+        totalAmount,
+      });
+    }
+
+    if (paymentStatus && paymentStatus !== "SUCCESS") {
+      return res.status(400).json({
+        error: "Payment is not successful",
+        paymentStatus,
+      });
+    }
+
+    // Create confirmed order using payment transaction details
+    const order = new Order({
+      userId,
+      products: normalizedProducts,
+      totalAmount,
+      paymentStatus: "SUCCESS",
+      status: "CONFIRMED",
+      transactionId,
+      OrderNumber: paymentOrderNumber,
+    });
+    order.OrderId = String(order._id);
+
+    // 4) Reduce stock
+    // for (const item of normalizedProducts) {
+    //   await reduceStock(item.productId, item.quantity);
+    // }
+
+    // 5) Finalize order
+    await order.save();
+
+    res.status(201).json({
+      message: "Order created",
+      order,
+      transactionId,
+      orderNumber: order.OrderNumber,
+    });
 
   } catch (error) {
     const statusCode = Number(error.response?.status) || 500;
@@ -171,7 +287,7 @@ exports.createOrder = async (req, res) => {
       ...toErrorLogPayload(error),
       requestSummary: {
         productCount: Array.isArray(req.body?.products) ? req.body.products.length : 0,
-        paymentMethod: req.body?.paymentMethod,
+        hasTransactionId: Boolean(String(req.body?.transactionId || "").trim()),
         hasAuthorizationHeader: Boolean(req.headers?.authorization),
       },
     });
@@ -191,7 +307,8 @@ exports.getOrderById = async (req, res) => {
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
-    return res.json(order);
+    const enrichedOrder = await attachProductNamesToOrder(order);
+    return res.json(enrichedOrder);
   } catch (error) {
     console.error("[OrderController.getOrderById]", {
       ...toErrorLogPayload(error),
@@ -204,7 +321,8 @@ exports.getOrderById = async (req, res) => {
 exports.getOrdersByUser = async (req, res) => {
   try {
     const orders = await Order.find({ userId: req.params.userId }).sort({ createdAt: -1 });
-    return res.json(orders);
+    const enrichedOrders = await attachProductNamesToOrders(orders);
+    return res.json(enrichedOrders);
   } catch (error) {
     console.error("[OrderController.getOrdersByUser]", {
       ...toErrorLogPayload(error),
@@ -217,7 +335,8 @@ exports.getOrdersByUser = async (req, res) => {
 exports.getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find().sort({ createdAt: -1 });
-    return res.json(orders);
+    const enrichedOrders = await attachProductNamesToOrders(orders);
+    return res.json(enrichedOrders);
   } catch (error) {
     console.error("[OrderController.getAllOrders]", toErrorLogPayload(error));
     return res.status(500).json({ error: error.message });

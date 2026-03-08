@@ -104,6 +104,26 @@ exports.getPaymentById = async (req, res) => {
   }
 };
 
+// Get payment details by transaction ID
+exports.getPaymentByTransactionId = async (req, res) => {
+  try {
+    const transactionId = String(req.params.transactionId || '').trim().toUpperCase();
+    if (!transactionId) {
+      return res.status(400).json({ error: 'transactionId is required' });
+    }
+
+    const payment = await Payment.findOne({ transactionId });
+    if (!payment) {
+      return res.status(404).json({ error: 'Payment not found' });
+    }
+
+    res.json(payment);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 // Update payment status (admin function)
 exports.updatePaymentStatus = async (req, res) => {
   try {
