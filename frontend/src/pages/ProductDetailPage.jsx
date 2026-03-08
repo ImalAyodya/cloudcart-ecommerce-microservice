@@ -1,6 +1,7 @@
 ﻿import { useState, useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import {
+  ArrowRight,
   ShoppingCart,
   Truck,
   ShieldCheck,
@@ -62,6 +63,28 @@ const ProductDetailPage = () => {
     addToCart(product, quantity);
     setAddedMsg("Added to cart!");
     setTimeout(() => setAddedMsg(""), 2500);
+  };
+
+  const handleOrderNow = () => {
+    if (!isAuthenticated) {
+      alert("Please log in to place an order.");
+      navigate("/login");
+      return;
+    }
+
+    const productId = product._id || product.id;
+
+    navigate("/checkout", {
+      state: {
+        buyNowItem: {
+          ...product,
+          id: productId,
+          _id: productId,
+          image: imageUrl,
+          quantity,
+        },
+      },
+    });
   };
 
   if (loading) {
@@ -180,13 +203,23 @@ const ProductDetailPage = () => {
                     </button>
                   </div>
 
-                  <button
-                    onClick={handleAddToCart}
-                    className="flex-1 flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 rounded-xl transition-colors"
-                  >
-                    <ShoppingCart className="w-4 h-4" />
-                    Add to Cart
-                  </button>
+                  <div className="flex-1 grid sm:grid-cols-2 gap-3">
+                    <button
+                      onClick={handleAddToCart}
+                      className="flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 rounded-xl transition-colors"
+                    >
+                      <ShoppingCart className="w-4 h-4" />
+                      Add to Cart
+                    </button>
+
+                    <button
+                      onClick={handleOrderNow}
+                      className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3 rounded-xl transition-colors"
+                    >
+                      Order Now
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               )}
 
