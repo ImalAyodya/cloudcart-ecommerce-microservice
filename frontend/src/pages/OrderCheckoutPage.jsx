@@ -15,6 +15,7 @@ import {
 import { useUser } from "../context/UserContext";
 import { getUserById } from "../services/userService";
 import { createOrder } from "../services/orderService";
+import { processPayment } from "../services/paymentService";
 
 const OrderCheckoutPage = () => {
   const navigate = useNavigate();
@@ -110,21 +111,44 @@ const OrderCheckoutPage = () => {
 
     if (!validate()) return;
 
+    const products = checkoutItems
+      .map((item) => ({
+        productId: item._id || item.id,
+        quantity: Number(item.quantity || 1),
+      }))
+      .filter((item) => Boolean(item.productId));
+
+    if (products.length === 0) {
+      setError("No valid products found to create the order");
+      return;
+    }
+
     setPlacingOrder(true);
     setError("");
 
-    const payload = {
-      userId,
-      paymentMethod,
-      products: checkoutItems.map((item) => ({
-        productId: item._id || item.id,
-        quantity: Number(item.quantity || 1),
-        price: Number(item.price || 0),
-      })),
-    };
-
     try {
-      const data = await createOrder(payload);
+      const paymentResponse = await processPayment({
+        orderId: `ORD${Date.now()}`,
+        userId: userId || "USER001",
+        email: customer.email.trim(),
+        amount: Number(totalAmount.toFixed(2)),
+        paymentMethod,
+      });
+
+      if (paymentResponse?.status !== "SUCCESS") {
+        throw new Error(paymentResponse?.message || "Payment processing failed");
+      }
+
+      const transactionId = paymentResponse?.transactionId;
+      if (!transactionId) {
+        throw new Error("transactionId is required from payment response");
+      }
+
+      const data = await createOrder({
+        transactionId,
+        products,
+      });
+
       const savedOrder = data.order || data;
 
       if (!buyNowItem) {
@@ -139,6 +163,7 @@ const OrderCheckoutPage = () => {
           shippingFee,
           customer,
           paymentMethod,
+          transactionId,
         },
       });
     } catch (err) {
