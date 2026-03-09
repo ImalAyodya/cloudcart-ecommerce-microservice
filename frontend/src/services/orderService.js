@@ -31,6 +31,20 @@ export const createOrder = async (orderData) => {
   return response.json();
 };
 
+export const getAllOrders = async () => {
+  const response = await fetch(`${API.orders}`, {
+    headers: {
+      ...getAuthHeaders(),
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(await parseError(response));
+  }
+
+  return response.json();
+};
+
 export const getOrdersByUser = async (userId) => {
   const response = await fetch(`${API.orders}/user/${userId}`, {
     headers: {
