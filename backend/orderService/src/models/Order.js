@@ -3,30 +3,54 @@ const mongoose = require("mongoose");
 const orderSchema = new mongoose.Schema({
   OrderId: {
     type: String,
+    trim: true,
     index: { unique: true, sparse: true }
   },
   OrderNumber: {
     type: String,
+    trim: true,
+    index: true,
     default: null
   },
   userId: {
     type: String,
+    trim: true,
+    index: true,
     required: true
   },
   products: [
     {
-      productId: String,
-      productName: String,
-      quantity: Number,
-      price: Number
+      productId: {
+        type: String,
+        trim: true,
+        required: true,
+      },
+      productName: {
+        type: String,
+        trim: true,
+        default: null,
+      },
+      quantity: {
+        type: Number,
+        required: true,
+        min: 1,
+      },
+      price: {
+        type: Number,
+        required: true,
+        min: 0,
+      }
     }
   ],
   totalAmount: {
     type: Number,
+    min: 0,
     required: true
   },
   transactionId: {
     type: String,
+    trim: true,
+    index: { unique: true, sparse: true },
     default: null
   },
   paymentStatus: {
