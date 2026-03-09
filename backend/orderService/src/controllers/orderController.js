@@ -1,9 +1,8 @@
 const Order = require("../models/Order");
+const mongoose = require("mongoose");
 const {
-  validateUser,
   checkProductAvailability,
   getPaymentByTransactionId,
-  reduceStock
 } = require("../services/externalServices");
 
 const toErrorLogPayload = (error) => ({
@@ -15,16 +14,24 @@ const toErrorLogPayload = (error) => ({
   upstreamMethod: error?.config?.method,
 });
 
-const extractTransactionId = (paymentResponse) => {
-  const rawTransactionId =
-    paymentResponse?.transactionId ||
-    paymentResponse?.payment?.transactionId ||
-    paymentResponse?.data?.transactionId ||
-    paymentResponse?.transaction?.id ||
-    paymentResponse?.payment?.transaction?.id ||
-    "";
+const normalizeId = (value) => String(value || "").trim();
 
-  return String(rawTransactionId || "").trim();
+const isAdminUser = (req) => String(req.user?.role || "").toLowerCase() === "admin";
+
+const isOrderOwner = (order, req) => normalizeId(order?.userId) === normalizeId(req.user?.id);
+
+const parsePagination = (query = {}) => {
+  const rawPage = Number(query.page);
+  const rawLimit = Number(query.limit);
+
+  const page = Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 1;
+  const limit = Number.isInteger(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 100) : null;
+
+  return {
+    page,
+    limit,
+    skip: limit ? (page - 1) * limit : 0,
+  };
 };
 
 const normalizeOrderDocument = (orderDoc) =>
@@ -118,9 +125,12 @@ exports.createOrder = async (req, res) => {
   try {
     const { products, transactionId: requestedTransactionId } = req.body;
     const authHeader = req.headers.authorization;
+    const userId = normalizeId(req.user?.id);
+    const userEmail = normalizeId(req.user?.email).toLowerCase();
+    const isAdmin = isAdminUser(req);
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ message: "Authorization token is required" });
+    if (!userId) {
+      return res.status(401).json({ message: "Invalid token or user not found" });
     }
 
     if (!Array.isArray(products) || products.length === 0) {
@@ -132,32 +142,26 @@ exports.createOrder = async (req, res) => {
       return res.status(400).json({ message: "transactionId is required" });
     }
 
-    // Resolve user from JWT token through user service
-    const userPayload = await validateUser(authHeader);
-    const userId = String(
-      userPayload?._id ||
-      userPayload?.id ||
-      userPayload?.user?._id ||
-      userPayload?.user?.id ||
-      ""
-    );
-    const userEmail = String(userPayload?.email || userPayload?.user?.email || "");
+    const existingOrder = await Order.findOne({ transactionId: requestedTransactionIdTrimmed });
+    if (existingOrder) {
+      if (!isAdmin && normalizeId(existingOrder.userId) !== userId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
 
-    if (!userId) {
-      return res.status(401).json({ message: "Invalid token or user not found" });
-    }
-
-    if (!userEmail) {
-      return res.status(400).json({ message: "Authenticated user email is required" });
+      const existingOrderPayload = await attachProductNamesToOrder(existingOrder);
+      return res.status(200).json({
+        message: "Order already exists for transactionId",
+        order: existingOrderPayload,
+        transactionId: existingOrder.transactionId,
+        orderNumber: existingOrder.OrderNumber,
+      });
     }
 
     for (const item of products) {
-      if (!item.productId || !item.quantity || Number(item.quantity) <= 0) {
+      if (!item.productId || !Number.isInteger(Number(item.quantity)) || Number(item.quantity) <= 0) {
         return res.status(400).json({ message: "Each product needs productId and quantity > 0" });
       }
     }
-
-    // 1️⃣ User already validated via token and profile lookup
 
     let totalAmount = 0;
     const normalizedProducts = [];
@@ -196,7 +200,7 @@ exports.createOrder = async (req, res) => {
     // 3) Use existing payment record from transactionId
     let paymentDetails;
     try {
-      paymentDetails = await getPaymentByTransactionId(requestedTransactionIdTrimmed);
+      paymentDetails = await getPaymentByTransactionId(requestedTransactionIdTrimmed, authHeader);
     } catch (lookupError) {
       const lookupStatus = Number(lookupError?.response?.status) || 502;
       const lookupMessage =
@@ -205,9 +209,8 @@ exports.createOrder = async (req, res) => {
         lookupError?.message ||
         "Payment lookup failed";
 
-      return res.status(502).json({
+      return res.status(lookupStatus).json({
         error: "Unable to resolve payment by transactionId",
-        status: lookupStatus,
         details: lookupMessage,
       });
     }
@@ -216,6 +219,8 @@ exports.createOrder = async (req, res) => {
     const paymentOrderNumber = String(paymentDetails?.orderId || "").trim();
     const paymentStatus = String(paymentDetails?.status || "").trim().toUpperCase();
     const paymentAmount = Number(paymentDetails?.amount);
+    const paymentUserId = normalizeId(paymentDetails?.userId);
+    const paymentEmail = normalizeId(paymentDetails?.email).toLowerCase();
 
     if (!transactionId) {
       return res.status(502).json({
@@ -228,6 +233,18 @@ exports.createOrder = async (req, res) => {
       return res.status(502).json({
         error: "Payment record does not contain orderId",
         payment: paymentDetails,
+      });
+    }
+
+    if (!isAdmin && paymentUserId && paymentUserId !== userId) {
+      return res.status(403).json({
+        error: "Payment does not belong to authenticated user",
+      });
+    }
+
+    if (!isAdmin && paymentEmail && userEmail && paymentEmail !== userEmail) {
+      return res.status(403).json({
+        error: "Payment email does not match authenticated user",
       });
     }
 
@@ -256,14 +273,6 @@ exports.createOrder = async (req, res) => {
       transactionId,
       OrderNumber: paymentOrderNumber,
     });
-    order.OrderId = String(order._id);
-
-    // 4) Reduce stock
-    // for (const item of normalizedProducts) {
-    //   await reduceStock(item.productId, item.quantity);
-    // }
-
-    // 5) Finalize order
     await order.save();
 
     res.status(201).json({
@@ -303,10 +312,19 @@ exports.createOrder = async (req, res) => {
 
 exports.getOrderById = async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({ message: "Invalid order id" });
+    }
+
     const order = await Order.findById(req.params.id);
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
+
+    if (!isAdminUser(req) && !isOrderOwner(order, req)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
     const enrichedOrder = await attachProductNamesToOrder(order);
     return res.json(enrichedOrder);
   } catch (error) {
@@ -320,7 +338,22 @@ exports.getOrderById = async (req, res) => {
 
 exports.getOrdersByUser = async (req, res) => {
   try {
-    const orders = await Order.find({ userId: req.params.userId }).sort({ createdAt: -1 });
+    const requestedUserId = normalizeId(req.params.userId);
+    if (!requestedUserId) {
+      return res.status(400).json({ message: "userId is required" });
+    }
+
+    if (!isAdminUser(req) && requestedUserId !== normalizeId(req.user?.id)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const { skip, limit } = parsePagination(req.query);
+    const query = Order.find({ userId: requestedUserId }).sort({ createdAt: -1 }).skip(skip);
+    if (limit) {
+      query.limit(limit);
+    }
+
+    const orders = await query;
     const enrichedOrders = await attachProductNamesToOrders(orders);
     return res.json(enrichedOrders);
   } catch (error) {
@@ -334,7 +367,13 @@ exports.getOrdersByUser = async (req, res) => {
 
 exports.getAllOrders = async (req, res) => {
   try {
-    const orders = await Order.find().sort({ createdAt: -1 });
+    const { skip, limit } = parsePagination(req.query);
+    const query = Order.find().sort({ createdAt: -1 }).skip(skip);
+    if (limit) {
+      query.limit(limit);
+    }
+
+    const orders = await query;
     const enrichedOrders = await attachProductNamesToOrders(orders);
     return res.json(enrichedOrders);
   } catch (error) {
@@ -345,9 +384,21 @@ exports.getAllOrders = async (req, res) => {
 
 exports.cancelOrder = async (req, res) => {
   try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(400).json({ message: "Invalid order id" });
+    }
+
     const order = await Order.findById(req.params.id);
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
+    }
+
+    if (!isAdminUser(req) && !isOrderOwner(order, req)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    if (order.status === "CANCELLED") {
+      return res.status(409).json({ message: "Order already cancelled", order });
     }
 
     order.status = "CANCELLED";
