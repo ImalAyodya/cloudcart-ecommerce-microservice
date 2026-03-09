@@ -1,17 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   AlertCircle,
-  ChevronDown,
-  ChevronUp,
+  ChevronRight,
   Loader2,
   Package,
   RefreshCw,
   ShoppingBag,
-  XCircle,
 } from "lucide-react";
 import { useUser } from "../context/UserContext";
-import { cancelOrder, getOrdersByUser } from "../services/orderService";
+import { getOrdersByUser } from "../services/orderService";
 
 const statusClass = (status) => {
   if (status === "CONFIRMED") return "bg-emerald-100 text-emerald-700";
@@ -28,23 +26,14 @@ const paymentClass = (status) => {
   return "bg-slate-100 text-slate-700";
 };
 
-const orderStatusMessage = (status) => {
-  if (status === "CREATED") return "Your order is placed and waiting for confirmation.";
-  if (status === "CONFIRMED") return "Your order is confirmed and being processed.";
-  if (status === "FAILED") return "This order failed. Please contact support if needed.";
-  if (status === "CANCELLED") return "This order has been cancelled.";
-  return "We are updating your order status.";
-};
-
 const MyOrdersPage = () => {
   const { isAuthenticated, user } = useUser();
+  const navigate = useNavigate();
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [cancelLoadingId, setCancelLoadingId] = useState("");
-  const [expandedOrderId, setExpandedOrderId] = useState("");
 
   const userId = user?._id || user?.id || user?.email || "";
 
@@ -76,28 +65,6 @@ const MyOrdersPage = () => {
     if (statusFilter === "ALL") return orders;
     return orders.filter((order) => order.status === statusFilter);
   }, [orders, statusFilter]);
-
-  const handleCancelOrder = async (orderId) => {
-    const confirmed = window.confirm("Cancel this order?");
-    if (!confirmed) return;
-
-    setCancelLoadingId(orderId);
-    setError("");
-
-    try {
-      const response = await cancelOrder(orderId);
-      const updatedOrder = response?.order || response;
-      setOrders((prev) =>
-        prev.map((order) =>
-          order._id === orderId ? { ...order, ...updatedOrder } : order
-        )
-      );
-    } catch (err) {
-      setError(err.message || "Failed to cancel order");
-    } finally {
-      setCancelLoadingId("");
-    }
-  };
 
   if (!isAuthenticated) {
     return (
@@ -180,130 +147,39 @@ const MyOrdersPage = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredOrders.map((order) => {
-              const canCancel = order.status === "CREATED" || order.status === "CONFIRMED";
-              const isExpanded = expandedOrderId === order._id;
+            {filteredOrders.map((order) => (
+              <div
+                key={order._id}
+                onClick={() => navigate(`/my-orders/${order._id}`)}
+                className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 cursor-pointer hover:border-sky-200 hover:shadow-md transition-all"
+              >
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <p className="text-xs text-slate-500">Order Number</p>
+                    <p className="font-mono text-sm font-semibold text-slate-800 break-all">
+                      {order.OrderNumber || order.orderNumber || order._id}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {order.createdAt ? new Date(order.createdAt).toLocaleString() : "-"}
+                    </p>
+                  </div>
 
-              return (
-                <div
-                  key={order._id}
-                  className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5"
-                >
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div>
-                      <p className="text-xs text-slate-500">OrderNumber</p>
-                      <p className="font-mono text-sm font-semibold text-slate-800 break-all">{order.OrderNumber || order.orderNumber || order._id}</p>
-                      <p className="text-xs text-slate-500 mt-1">
-                        {order.createdAt ? new Date(order.createdAt).toLocaleString() : "-"}
-                      </p>
-                    </div>
-
+                  <div className="flex items-center gap-4">
                     <div className="flex flex-col items-start md:items-end gap-2">
                       <p className="text-base font-bold text-slate-800">
                         Total: LKR {Number(order.totalAmount || 0).toFixed(2)}
                       </p>
-
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${statusClass(order.status)}`}>
                           {order.status || "UNKNOWN"}
                         </span>
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${paymentClass(order.paymentStatus)}`}>
-                          Payment: {order.paymentStatus || "N/A"}
-                        </span>
                       </div>
-
-                      <button
-                        onClick={() =>
-                          setExpandedOrderId((prev) =>
-                            prev === order._id ? "" : order._id
-                          )
-                        }
-                        className="inline-flex items-center gap-2 px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                      >
-                        {isExpanded ? "Hide Details" : "View Details"}
-                        {isExpanded ? (
-                          <ChevronUp className="w-4 h-4" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4" />
-                        )}
-                      </button>
                     </div>
+                    <ChevronRight className="w-5 h-5 text-slate-400" />
                   </div>
-
-                  {isExpanded && (
-                    <div className="pt-4 mt-4 border-t border-slate-100">
-                      <div className="mb-4 bg-slate-50 rounded-xl p-3">
-                        <p className="text-sm text-slate-700 font-medium">
-                          {orderStatusMessage(order.status)}
-                        </p>
-                      </div>
-
-                      <div className="space-y-3">
-                        {order.products?.length ? (
-                          order.products.map((product, index) => {
-                            const quantity = Number(product.quantity || 0);
-                            const unitPrice = Number(product.price || 0);
-                            const lineTotal = unitPrice * quantity;
-                            const productName =
-                              product.productName ||
-                              product.name ||
-                              product.productId ||
-                              "Product";
-
-                            return (
-                              <div
-                                key={`${product.productId || productName}-${index}`}
-                                className="border border-slate-100 rounded-xl p-3"
-                              >
-                                <p className="text-sm font-semibold text-slate-800 break-words">
-                                  {productName}
-                                </p>
-
-                                <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-slate-700">
-                                  <p>Qty: {quantity}</p>
-                                  <p>Unit Price: LKR {unitPrice.toFixed(2)}</p>
-                                  <p className="font-semibold text-slate-800">
-                                    Subtotal: LKR {lineTotal.toFixed(2)}
-                                  </p>
-                                </div>
-                              </div>
-                            );
-                          })
-                        ) : (
-                          <p className="text-sm text-slate-500">No products available for this order.</p>
-                        )}
-                      </div>
-
-                      <div className="pt-4 mt-4 border-t border-slate-100 flex justify-end">
-                        {canCancel && (
-                          <button
-                            onClick={() => handleCancelOrder(order._id)}
-                            disabled={cancelLoadingId === order._id}
-                            className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                              cancelLoadingId === order._id
-                                ? "bg-slate-200 text-slate-500 cursor-not-allowed"
-                                : "bg-red-50 text-red-700 hover:bg-red-100"
-                            }`}
-                          >
-                            {cancelLoadingId === order._id ? (
-                              <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Cancelling...
-                              </>
-                            ) : (
-                              <>
-                                <XCircle className="w-4 h-4" />
-                                Cancel Order
-                              </>
-                            )}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         )}
       </div>

@@ -19,6 +19,7 @@ import CartPage from "./pages/CartPage";
 import OrderCheckoutPage from "./pages/OrderCheckoutPage";
 import OrderSuccessPage from "./pages/OrderSuccessPage";
 import MyOrdersPage from "./pages/MyOrdersPage";
+import OrderDetailPage from "./pages/OrderDetailPage";
 
 // Admin Components
 import AdminLayout from "./components/admin/AdminLayout";
@@ -57,6 +58,7 @@ function AppLayout() {
           <Route path="/checkout" element={<OrderCheckoutPage />} />
           <Route path="/order-success" element={<OrderSuccessPage />} />
           <Route path="/my-orders" element={<MyOrdersPage />} />
+          <Route path="/my-orders/:id" element={<OrderDetailPage />} />
           <Route path="/payment" element={<PaymentPage />} />
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
           <Route path="/payment-failed" element={<PaymentFailedPage />} />
