@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { CheckCircle, Home, Package, Receipt, ShoppingBag } from "lucide-react";
+import { CheckCircle, Package, Receipt, ShoppingBag } from "lucide-react";
 
 const statusClass = (status) => {
   if (status === "CONFIRMED") return "bg-emerald-100 text-emerald-700";
@@ -12,8 +12,30 @@ const statusClass = (status) => {
 const OrderSuccessPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { order, items, totalAmount, shippingFee, customer, paymentMethod } =
-    location.state || {};
+  const {
+    order,
+    payment,
+    items,
+    totalAmount,
+    shippingFee,
+    customer,
+    paymentMethod,
+  } = location.state || {};
+
+  const resolvedPaymentMethod = (
+    payment?.paymentMethod || paymentMethod || order?.paymentMethod || "N/A"
+  )
+    .toString()
+    .toUpperCase();
+
+  const normalizedPaymentMethod = resolvedPaymentMethod.includes("CASH")
+    ? "COD"
+    : resolvedPaymentMethod.includes("CARD")
+      ? "CARD"
+      : resolvedPaymentMethod;
+
+  const isCardPayment = normalizedPaymentMethod === "CARD";
+  const isCodPayment = normalizedPaymentMethod === "COD";
 
   useEffect(() => {
     if (!order) {
@@ -39,8 +61,8 @@ const OrderSuccessPage = () => {
             <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
               <div className="grid sm:grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-slate-500">Order ID</p>
-                  <p className="font-mono font-semibold text-slate-800 break-all">{order._id}</p>
+                  <p className="text-slate-500">OrderNumber</p>
+                  <p className="font-mono font-semibold text-slate-800 break-all">{order.OrderNumber || order.orderNumber || order._id}</p>
                 </div>
                 <div>
                   <p className="text-slate-500">Placed On</p>
@@ -48,9 +70,37 @@ const OrderSuccessPage = () => {
                     {new Date(order.createdAt || Date.now()).toLocaleString()}
                   </p>
                 </div>
-                <div>
-                  <p className="text-slate-500">Payment Method</p>
-                  <p className="font-semibold text-slate-800">{paymentMethod === "COD" ? "Cash on Delivery" : "Card Payment"}</p>
+                <div className="sm:col-span-2">
+                  <p className="text-slate-500 mb-2">Payment Method</p>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <label
+                      className={`pointer-events-none flex items-start gap-2 rounded-xl border px-3 py-2 ${
+                        isCardPayment
+                          ? "border-sky-300 bg-sky-50"
+                          : "border-slate-200 bg-white"
+                      }`}
+                    >
+                      <input type="radio" checked={isCardPayment} readOnly className="mt-0.5" />
+                      <span>
+                        <span className="block font-semibold text-slate-800">Card Payment</span>
+                        <span className="text-xs text-slate-500">Pay now with debit or credit card</span>
+                      </span>
+                    </label>
+
+                    <label
+                      className={`pointer-events-none flex items-start gap-2 rounded-xl border px-3 py-2 ${
+                        isCodPayment
+                          ? "border-sky-300 bg-sky-50"
+                          : "border-slate-200 bg-white"
+                      }`}
+                    >
+                      <input type="radio" checked={isCodPayment} readOnly className="mt-0.5" />
+                      <span>
+                        <span className="block font-semibold text-slate-800">Cash on Delivery</span>
+                        <span className="text-xs text-slate-500">Pay when your package arrives</span>
+                      </span>
+                    </label>
+                  </div>
                 </div>
                 <div>
                   <p className="text-slate-500">Status</p>
@@ -112,7 +162,7 @@ const OrderSuccessPage = () => {
               </div>
             </div>
 
-            <div className="grid sm:grid-cols-3 gap-3 pt-2">
+            <div className="grid sm:grid-cols-2 gap-3 pt-2">
               <Link
                 to="/my-orders"
                 className="inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-semibold text-sm"
@@ -126,13 +176,6 @@ const OrderSuccessPage = () => {
               >
                 <ShoppingBag className="w-4 h-4" />
                 Shop More
-              </Link>
-              <Link
-                to="/home"
-                className="inline-flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold text-sm"
-              >
-                <Home className="w-4 h-4" />
-                Home
               </Link>
             </div>
           </div>
