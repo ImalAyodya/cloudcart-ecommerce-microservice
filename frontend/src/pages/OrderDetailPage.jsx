@@ -12,7 +12,7 @@ import {
 import { useUser } from "../context/UserContext";
 import { getOrderById, cancelOrder } from "../services/orderService";
 import { getProductById } from "../services/productService";
-import { getPaymentByTransactionId } from "../services/paymentService";
+import { getPaymentByTransactionId, getPaymentById } from "../services/paymentService";
 
 const statusClass = (status) => {
   if (status === "CONFIRMED") return "bg-emerald-100 text-emerald-700";
@@ -76,13 +76,21 @@ const OrderDetailPage = () => {
 
         // Fetch payment method from transactionId
         if (data.transactionId) {
+          let payment = null;
           try {
             const paymentRes = await getPaymentByTransactionId(data.transactionId);
-            const payment = paymentRes?.payment || paymentRes;
-            if (payment?.paymentMethod) {
-              setPaymentMethodFromApi(payment.paymentMethod);
-            }
-          } catch {}
+            payment = paymentRes?.payment || paymentRes;
+          } catch {
+            // Fallback: try getPaymentById with transactionId
+            try {
+              const paymentRes = await getPaymentById(data.transactionId);
+              payment = paymentRes?.payment || paymentRes;
+            } catch {}
+          }
+          if (payment) {
+            const method = payment.paymentMethod || payment.method || payment.type;
+            if (method) setPaymentMethodFromApi(method);
+          }
         }
       } catch (err) {
         setError(err.message || "Failed to load order details");
