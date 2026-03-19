@@ -10,6 +10,8 @@ const ProductManagement = () => {
 
   const { user } = useUser();
 
+  const LOW_STOCK_THRESHOLD = Number(import.meta.env.VITE_LOW_STOCK_THRESHOLD || 5);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
   const [products, setProducts] = useState([]);
@@ -50,7 +52,7 @@ const ProductManagement = () => {
   );
 
   const lowStockList = products.filter(
-    (p) => p.status === "Low Stock" || p.status === "Out of Stock" || (typeof p.stock === "number" && p.stock <= 5)
+    (p) => p.status === "Low Stock" || p.status === "Out of Stock" || (typeof p.stock === "number" && p.stock <= LOW_STOCK_THRESHOLD)
   );
 
   const handleSendStockReport = async () => {
@@ -75,6 +77,10 @@ const ProductManagement = () => {
       setError("Please log in to send alerts");
       return;
     }
+    if (lowStockList.length === 0) {
+      setError("No low stock items to send");
+      return;
+    }
     setSending(true);
     setActionMessage("");
     setError("");
@@ -85,7 +91,7 @@ const ProductManagement = () => {
           stock: p.stock,
           status: p.status,
           category: p.category,
-          threshold: 5,
+          threshold: LOW_STOCK_THRESHOLD,
         })),
         user?.email
       );
@@ -182,7 +188,7 @@ const ProductManagement = () => {
           </button>
           <button
             onClick={handleSendLowStockAlert}
-            disabled={sending || lowStockList.length === 0}
+            disabled={sending}
             className="bg-amber-600 text-white px-4 py-3 rounded-lg hover:bg-amber-700 transition-colors flex items-center gap-2 disabled:opacity-60"
           >
             {sending ? "Sending..." : "Send Low Stock Alert"}
