@@ -15,6 +15,7 @@ const bodyParser = require('body-parser');
 // Import routes
 const notificationRoutes = require('./routes/notificationRoutes');
 const healthRoutes = require('./routes/healthRoutes');
+const productNotificationRoutes = require('./routes/productNotification');
 
 const app = express();
 const PORT = process.env.PORT || 5003;
@@ -34,6 +35,7 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/health', healthRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/notifications', productNotificationRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
