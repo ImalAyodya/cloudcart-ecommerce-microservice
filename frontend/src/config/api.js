@@ -25,6 +25,9 @@ const API = {
 
   // Payment Service
   payments: `${API_GATEWAY_URL}/api/payments`,
+
+  // Notification Service
+  notifications: `${API_GATEWAY_URL}/api/notifications`,
 };
 
 export default API;
