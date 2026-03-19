@@ -1,7 +1,10 @@
 const emailService = require('../utils/emailService');
 
 const getRecipient = (requestedEmail) => {
-	return requestedEmail || process.env.STOCK_ALERT_EMAIL || process.env.EMAIL_USER;
+	if (typeof requestedEmail === 'string' && requestedEmail.trim().length > 0) {
+		return requestedEmail.trim();
+	}
+	return process.env.STOCK_ALERT_EMAIL || process.env.EMAIL_USER;
 };
 
 // POST /api/notifications/product/low-stock
