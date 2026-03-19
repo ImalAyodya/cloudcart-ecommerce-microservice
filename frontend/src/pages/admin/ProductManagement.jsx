@@ -20,7 +20,7 @@ const ProductManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
-  const [sending, setSending] = useState(false);
+  const [sendingAction, setSendingAction] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -60,7 +60,7 @@ const ProductManagement = () => {
       setError("Please log in to send reports");
       return;
     }
-    setSending(true);
+    setSendingAction("stock-report");
     setActionMessage("");
     setError("");
     try {
@@ -69,7 +69,7 @@ const ProductManagement = () => {
     } catch (err) {
       setError("Failed to send stock report");
     }
-    setSending(false);
+    setSendingAction("");
   };
 
   const handleSendLowStockAlert = async () => {
@@ -81,7 +81,7 @@ const ProductManagement = () => {
       setError("No low stock items to send");
       return;
     }
-    setSending(true);
+    setSendingAction("low-stock");
     setActionMessage("");
     setError("");
     try {
@@ -99,7 +99,7 @@ const ProductManagement = () => {
     } catch (err) {
       setError(err.message || "Failed to send low stock alert");
     }
-    setSending(false);
+    setSendingAction("");
   };
 
 
@@ -181,17 +181,17 @@ const ProductManagement = () => {
           </Link>
           <button
             onClick={handleSendStockReport}
-            disabled={sending}
+            disabled={sendingAction !== "" && sendingAction !== "stock-report"}
             className="bg-slate-800 text-white px-4 py-3 rounded-lg hover:bg-slate-900 transition-colors flex items-center gap-2 disabled:opacity-60"
           >
-            {sending ? "Sending..." : "Send Stock Snapshot"}
+            {sendingAction === "stock-report" ? "Sending..." : "Send Stock Snapshot"}
           </button>
           <button
             onClick={handleSendLowStockAlert}
-            disabled={sending}
+            disabled={sendingAction !== "" && sendingAction !== "low-stock"}
             className="bg-amber-600 text-white px-4 py-3 rounded-lg hover:bg-amber-700 transition-colors flex items-center gap-2 disabled:opacity-60"
           >
-            {sending ? "Sending..." : "Send Low Stock Alert"}
+            {sendingAction === "low-stock" ? "Sending..." : "Send Low Stock Alert"}
           </button>
         </div>
 
