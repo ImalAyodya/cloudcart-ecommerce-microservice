@@ -15,7 +15,8 @@ const services = {
   products: process.env.PRODUCT_SERVICE_URL || 'http://localhost:5000',
   auth: process.env.USER_SERVICE_URL || 'http://localhost:5001',
   orders: process.env.ORDER_SERVICE_URL || 'http://localhost:5004',
-  payments: process.env.PAYMENT_SERVICE_URL || 'http://localhost:5002'
+  payments: process.env.PAYMENT_SERVICE_URL || 'http://localhost:5002',
+  notifications: process.env.NOTIFICATION_SERVICE_URL || 'http://localhost:5003'
   
 };
 
