@@ -43,3 +43,55 @@ foreach ($app in $apps) {
 }
 
 Write-Host "✅ All container apps scaled to 1"
+
+
+________all goes replicas 0 
+$resourceGroup = "cloudcart-rg"
+
+$apps = az containerapp list `
+  --resource-group $resourceGroup `
+  --query "[].name" -o tsv
+
+foreach ($app in $apps) {
+    Write-Host "Stopping $app..."
+    az containerapp update `
+        --name $app `
+        --resource-group $resourceGroup `
+        --min-replicas 0
+}
+
+Write-Host "✅ All container apps scaled to 0"
+
+
+________all replicas in every service
+$resourceGroup = "cloudcart-rg"
+
+$apps = az containerapp list `
+  --resource-group $resourceGroup `
+  --query "[].name" -o tsv
+
+foreach ($app in $apps) {
+    $replicas = az containerapp show `
+        --name $app `
+        --resource-group $resourceGroup `
+        --query "properties.template.scale.minReplicas" `
+        -o tsv
+
+    Write-Host "$app => minReplicas: $replicas"
+}
+
+________check all replicas in each and every conatianer apps$resourceGroup = "cloudcart-rg"
+
+$apps = az containerapp list `
+  --resource-group $resourceGroup `
+  --query "[].name" -o tsv
+
+foreach ($app in $apps) {
+    $replicas = az containerapp show `
+        --name $app `
+        --resource-group $resourceGroup `
+        --query "properties.template.scale.minReplicas" `
+        -o tsv
+
+    Write-Host "$app => minReplicas: $replicas"
+}
