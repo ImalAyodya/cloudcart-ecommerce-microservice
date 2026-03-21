@@ -44,7 +44,7 @@ const LoginPage = () => {
     setLoading(true);
     try {
       await login(formData.email, formData.password);
-      navigate("/profile");
+      navigate("/home");
     } catch (err) {
       setError(err.message || "Invalid email or password. Please try again.");
     } finally {

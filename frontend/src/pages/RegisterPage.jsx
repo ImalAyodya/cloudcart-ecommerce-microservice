@@ -29,7 +29,7 @@ const RegisterPage = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/profile");
+      navigate("/home");
     }
   }, [isAuthenticated, navigate]);
 
@@ -65,7 +65,7 @@ const RegisterPage = () => {
         email: formData.email,
         password: formData.password,
       });
-      navigate("/profile");
+      navigate("/home");
     } catch (err) {
       setError(err.message || "Registration failed. Please try again.");
     } finally {
