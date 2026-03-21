@@ -3,8 +3,14 @@ import { Link } from "react-router-dom";
 import AdminHeader from "../../components/admin/AdminHeader";
 
 import { getAllProducts, getProductStats } from "../../services/productService";
+import { sendProductStockReport, sendLowStockAlert } from "../../services/notificationService";
+import { useUser } from "../../context/UserContext";
 
 const ProductManagement = () => {
+
+  const { user } = useUser();
+
+  const LOW_STOCK_THRESHOLD = Number(import.meta.env.VITE_LOW_STOCK_THRESHOLD || 5);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All");
@@ -13,11 +19,14 @@ const ProductManagement = () => {
   const [categories, setCategories] = useState(["All"]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [actionMessage, setActionMessage] = useState("");
+  const [sending, setSending] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       setError("");
+      setActionMessage("");
       try {
         const [productRes, statsRes] = await Promise.all([
           getAllProducts(),
@@ -41,6 +50,57 @@ const ProductManagement = () => {
       (categoryFilter === "All" || product.category === categoryFilter) &&
       product.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const lowStockList = products.filter(
+    (p) => p.status === "Low Stock" || p.status === "Out of Stock" || (typeof p.stock === "number" && p.stock <= LOW_STOCK_THRESHOLD)
+  );
+
+  const handleSendStockReport = async () => {
+    if (!user?.email) {
+      setError("Please log in to send reports");
+      return;
+    }
+    setSending(true);
+    setActionMessage("");
+    setError("");
+    try {
+      await sendProductStockReport(user?.email);
+      setActionMessage("Stock report email requested.");
+    } catch (err) {
+      setError("Failed to send stock report");
+    }
+    setSending(false);
+  };
+
+  const handleSendLowStockAlert = async () => {
+    if (!user?.email) {
+      setError("Please log in to send alerts");
+      return;
+    }
+    if (lowStockList.length === 0) {
+      setError("No low stock items to send");
+      return;
+    }
+    setSending(true);
+    setActionMessage("");
+    setError("");
+    try {
+      await sendLowStockAlert(
+        lowStockList.map((p) => ({
+          name: p.name,
+          stock: p.stock,
+          status: p.status,
+          category: p.category,
+          threshold: LOW_STOCK_THRESHOLD,
+        })),
+        user?.email
+      );
+      setActionMessage("Low stock alert requested.");
+    } catch (err) {
+      setError(err.message || "Failed to send low stock alert");
+    }
+    setSending(false);
+  };
 
 
 
@@ -119,7 +179,23 @@ const ProductManagement = () => {
             </svg>
             Add Product
           </Link>
+          <button
+            onClick={handleSendStockReport}
+            disabled={sending}
+            className="bg-slate-800 text-white px-4 py-3 rounded-lg hover:bg-slate-900 transition-colors flex items-center gap-2 disabled:opacity-60"
+          >
+            {sending ? "Sending..." : "Send Stock Snapshot"}
+          </button>
+          <button
+            onClick={handleSendLowStockAlert}
+            disabled={sending}
+            className="bg-amber-600 text-white px-4 py-3 rounded-lg hover:bg-amber-700 transition-colors flex items-center gap-2 disabled:opacity-60"
+          >
+            {sending ? "Sending..." : "Send Low Stock Alert"}
+          </button>
         </div>
+
+        {actionMessage && <div className="mb-4 text-center text-emerald-600">{actionMessage}</div>}
 
         {/* Products Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
