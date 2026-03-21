@@ -1,6 +1,45 @@
+// PATCH /api/products/:id/reduce-stock
+exports.reduceProductStock = async (req, res) => {
+  try {
+    const { amount } = req.body;
+    if (typeof amount !== 'number' || amount <= 0) {
+      return res.status(400).json({ error: 'amount must be a positive number' });
+    }
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    if (product.stock < amount) {
+      return res.status(400).json({ error: 'Insufficient stock' });
+    }
+    product.stock -= amount;
+    await product.save();
+    await notifyLowStockIfNeeded(product);
+    res.status(200).json({ message: 'Stock reduced', product });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
 const Product = require('../models/Product');
 const notificationClient = require('../services/notificationClient');
 const { LOW_STOCK_THRESHOLD } = require('../config/env');
+
+// GET /api/products/:id/availability
+exports.getProductAvailability = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id).select('price stock status');
+    if (!product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    res.status(200).json({
+      price: product.price,
+      stock: product.stock,
+      availability: product.status
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 const notifyLowStockIfNeeded = async (product) => {
   const isLowStock = product.stock <= LOW_STOCK_THRESHOLD || ['Low Stock', 'Out of Stock'].includes(product.status);

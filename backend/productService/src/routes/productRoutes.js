@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { createProduct, getAllProducts, getProductById, updateProduct, deleteProduct, updateProductQty, getProductStats, sendStockReport } = require('../controllers/productController');
+const { createProduct, getAllProducts, getProductById, updateProduct, deleteProduct, updateProductQty, getProductStats, sendStockReport, getProductAvailability, reduceProductStock } = require('../controllers/productController');
+// Reduce product stock
+router.patch('/:id/reduce-stock', reduceProductStock);
+// Get product availability
+router.get('/:id/availability', getProductAvailability);
 
 // Create product
 router.post('/', createProduct);

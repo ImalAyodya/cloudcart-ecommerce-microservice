@@ -34,6 +34,23 @@ jobs:
       - name: Login to Azure Container Registry
         run: echo ${{ secrets.AZURE_REGISTRY_PASSWORD }} | docker login ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }} -u ${{ secrets.AZURE_REGISTRY_USERNAME }} --password-stdin
 
+      # Product Service Tests
+      - name: Setup Node.js for Product Service
+        if: steps.changes.outputs.product_service == 'true'
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Product Service Dependencies
+        if: steps.changes.outputs.product_service == 'true'
+        working-directory: backend/productService
+        run: npm ci
+
+      - name: Run Product Service Tests
+        if: steps.changes.outputs.product_service == 'true'
+        working-directory: backend/productService
+        run: npm test
+
       # Product Service
       - name: Build Product Service Image
         if: steps.changes.outputs.product_service == 'true'
