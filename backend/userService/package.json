@@ -8,7 +8,11 @@
     "dev": "nodemon src/server.js",
     "test": "echo \"No tests configured\" && exit 0"
   },
-  "keywords": ["user","service","cloudcart"],
+  "keywords": [
+    "user",
+    "service",
+    "cloudcart"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
@@ -18,10 +22,11 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.0",
-    "mongoose": "^7.6.0"
+    "mongoose": "^7.6.0",
+    "swagger-ui-express": "^5.0.1",
+    "yamljs": "^0.3.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"
   }
 }
-

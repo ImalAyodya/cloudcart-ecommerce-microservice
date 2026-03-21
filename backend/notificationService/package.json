@@ -17,12 +17,13 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "body-parser": "^1.20.2",
     "cors": "^2.8.6",
     "dotenv": "^16.4.5",
     "express": "^5.2.1",
     "mongoose": "^9.2.1",
     "nodemailer": "^6.9.8",
-    "body-parser": "^1.20.2"
+    "swagger": "^0.7.5"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

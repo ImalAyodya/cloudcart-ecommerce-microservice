@@ -1,0 +1,339 @@
+openapi: 3.0.3
+info:
+  title: CloudCart Payment Service API
+  description: |
+    API for payment processing in the CloudCart e-commerce platform.
+    This service handles payment transactions, status updates, and payment verification.
+  version: 1.0.0
+  contact:
+    name: CloudCart Team
+
+servers:
+  - url: http://localhost:5002/api/payments
+    description: Local development server
+  - url: https://payment-service.agreeableriver-79a7139e.southeastasia.azurecontainerapps.io/api/payments
+    description: Production server
+
+tags:
+  - name: Payments
+    description: Payment processing operations
+  - name: Admin
+    description: Admin-only payment operations
+
+paths:
+  /process:
+    post:
+      tags:
+        - Payments
+      summary: Process payment
+      description: Processes a payment transaction for an order. Generates a unique transaction ID and sends payment receipt via email.
+      operationId: processPayment
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProcessPaymentInput'
+      responses:
+        '201':
+          description: Payment processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '400':
+          description: Invalid input or validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentError'
+        '401':
+          description: Unauthorized - authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Payment already processed for this order
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /transaction/{transactionId}:
+    get:
+      tags:
+        - Payments
+      summary: Get payment by transaction ID
+      description: Retrieves payment details using the transaction ID. No authentication required for verification purposes.
+      operationId: getPaymentByTransactionId
+      parameters:
+        - $ref: '#/components/parameters/TransactionId'
+      responses:
+        '200':
+          description: Payment retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '400':
+          description: Invalid transaction ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Payment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /{id}:
+    get:
+      tags:
+        - Payments
+      summary: Get payment by ID
+      description: Retrieves payment details by payment ID
+      operationId: getPaymentById
+      parameters:
+        - $ref: '#/components/parameters/PaymentId'
+      responses:
+        '200':
+          description: Payment retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '404':
+          description: Payment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /{id}/status:
+    put:
+      tags:
+        - Admin
+      summary: Update payment status
+      description: Updates the payment status (admin only). Allowed statuses are SUCCESS, FAILED, REFUNDED.
+      operationId: updatePaymentStatus
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PaymentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePaymentStatusInput'
+      responses:
+        '200':
+          description: Payment status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '400':
+          description: Invalid status value
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Payment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from User Service login/register endpoint
+
+  parameters:
+    PaymentId:
+      name: id
+      in: path
+      required: true
+      description: MongoDB ObjectId of the payment
+      schema:
+        type: string
+        pattern: '^[a-fA-F0-9]{24}$'
+        example: 507f1f77bcf86cd799439011
+
+    TransactionId:
+      name: transactionId
+      in: path
+      required: true
+      description: Unique transaction ID (format TXN followed by 9 alphanumeric characters)
+      schema:
+        type: string
+        pattern: '^TXN[A-Z0-9]{9}$'
+        example: TXN9ABC1XYZ
+
+  schemas:
+    ProcessPaymentInput:
+      type: object
+      required:
+        - orderId
+        - userId
+        - email
+        - amount
+        - paymentMethod
+      properties:
+        orderId:
+          type: string
+          description: Order ID for which payment is being processed
+          example: ORD-001
+        userId:
+          type: string
+          description: User ID making the payment
+          example: 507f1f77bcf86cd799439011
+        email:
+          type: string
+          format: email
+          description: Email address for payment receipt
+          example: user@example.com
+        amount:
+          type: number
+          format: float
+          minimum: 0
+          exclusiveMinimum: true
+          description: Payment amount (must be greater than 0)
+          example: 199.98
+        paymentMethod:
+          type: string
+          description: Payment method used (credit card, debit card, wallet, etc.)
+          example: credit_card
+
+    UpdatePaymentStatusInput:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - SUCCESS
+            - FAILED
+            - REFUNDED
+          description: New payment status
+          example: SUCCESS
+
+    Payment:
+      type: object
+      properties:
+        _id:
+          type: string
+          pattern: '^[a-fA-F0-9]{24}$'
+          description: MongoDB ObjectId
+          example: 507f1f77bcf86cd799439011
+        orderId:
+          type: string
+          description: Order ID associated with this payment
+          example: ORD-001
+        userId:
+          type: string
+          description: User ID who made the payment
+          example: 507f1f77bcf86cd799439011
+        email:
+          type: string
+          format: email
+          description: Email address used for payment receipt
+          example: user@example.com
+        amount:
+          type: number
+          format: float
+          description: Payment amount
+          example: 199.98
+        paymentMethod:
+          type: string
+          description: Payment method used
+          example: credit_card
+        transactionId:
+          type: string
+          description: Unique transaction ID generated by the service
+          example: TXN9ABC1XYZ
+        status:
+          type: string
+          enum:
+            - SUCCESS
+            - FAILED
+            - REFUNDED
+          description: Current payment status
+          example: SUCCESS
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the payment was created
+          example: '2024-01-15T10:30:00.000Z'
+        updatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the payment was last updated
+          example: '2024-01-15T10:30:00.000Z'
+
+    PaymentError:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: Missing required fields
+        message:
+          type: string
+          description: Detailed error message
+          example: 'Missing required fields: orderId, amount'
+        missingFields:
+          type: array
+          items:
+            type: string
+          description: List of missing required fields
+          example:
+            - orderId
+            - amount
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: Payment not found
+        message:
+          type: string
+          description: Detailed error message
+          example: Payment with ID XXX not found
