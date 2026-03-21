@@ -19,26 +19,14 @@ jobs:
       - name: Detect changed services
         id: changes
         run: |
-          BEFORE_SHA="${{ github.event.before }}"
-          AFTER_SHA="${{ github.sha }}"
-
-          # For normal pushes, compare full push range; on first push, treat all tracked files as changed.
-          if [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
-            CHANGED=$(git ls-files)
-          else
-            CHANGED=$(git diff --name-only "$BEFORE_SHA" "$AFTER_SHA")
-          fi
-
-          echo "Changed files:"
-          echo "$CHANGED"
-
-          echo "product_service=$(echo "$CHANGED" | grep -q '^backend/productService/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-          echo "user_service=$(echo "$CHANGED" | grep -q '^backend/userService/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-          echo "api_gateway=$(echo "$CHANGED" | grep -q '^backend/apiGateway/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-          echo "payment_service=$(echo "$CHANGED" | grep -q '^backend/paymentService/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-          echo "order_service=$(echo "$CHANGED" | grep -q '^backend/orderService/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-          echo "notification_service=$(echo "$CHANGED" | grep -q '^backend/notificationService/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-          echo "frontend=$(echo "$CHANGED" | grep -q '^frontend/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "Forcing full rebuild: all services marked as changed."
+          echo "product_service=true" >> $GITHUB_OUTPUT
+          echo "user_service=true" >> $GITHUB_OUTPUT
+          echo "api_gateway=true" >> $GITHUB_OUTPUT
+          echo "payment_service=true" >> $GITHUB_OUTPUT
+          echo "order_service=true" >> $GITHUB_OUTPUT
+          echo "notification_service=true" >> $GITHUB_OUTPUT
+          echo "frontend=true" >> $GITHUB_OUTPUT
 
       - name: Login to Azure Container Registry
         run: echo ${{ secrets.AZURE_REGISTRY_PASSWORD }} | docker login ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }} -u ${{ secrets.AZURE_REGISTRY_USERNAME }} --password-stdin
