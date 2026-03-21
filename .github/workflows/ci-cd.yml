@@ -13,13 +13,22 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 2  # Needed so git diff HEAD~1 HEAD works
+          fetch-depth: 0  # Needed so we can diff full push range reliably
 
       # Detect which services have changed files
       - name: Detect changed services
         id: changes
         run: |
-          CHANGED=$(git diff --name-only HEAD~1 HEAD)
+          BEFORE_SHA="${{ github.event.before }}"
+          AFTER_SHA="${{ github.sha }}"
+
+          # For normal pushes, compare full push range; on first push, treat all tracked files as changed.
+          if [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            CHANGED=$(git ls-files)
+          else
+            CHANGED=$(git diff --name-only "$BEFORE_SHA" "$AFTER_SHA")
+          fi
+
           echo "Changed files:"
           echo "$CHANGED"
 
