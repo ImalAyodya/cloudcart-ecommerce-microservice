@@ -56,11 +56,11 @@ function AppLayout() {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/cart" element={<CartPage />} />
-          <Route path="/checkout" element={<OrderCheckoutPage />} />
+          <Route path="/payment" element={<PaymentPage />} />
           <Route path="/order-success" element={<OrderSuccessPage />} />
           <Route path="/my-orders" element={<MyOrdersPage />} />
           <Route path="/my-orders/:id" element={<OrderDetailPage />} />
-          <Route path="/payment" element={<PaymentPage />} />
+          
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
           <Route path="/payment-failed" element={<PaymentFailedPage />} />
         </Routes>
