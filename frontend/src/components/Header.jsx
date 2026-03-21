@@ -41,14 +41,14 @@ const Header = () => {
       {/* Top bar */}
       <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white text-xs py-2">
         <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
-          <p>Free shipping on orders over $50</p>
+          
           <div className="flex gap-4">
             {isAuthenticated && user ? (
               <span>Welcome, {user.name}</span>
             ) : (
               <span>support@cloudcart.com</span>
             )}
-            <span>+94 76 433 5055</span>
+            
           </div>
         </div>
       </div>
