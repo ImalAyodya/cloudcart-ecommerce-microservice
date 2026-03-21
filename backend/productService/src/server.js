@@ -3,6 +3,7 @@ const cors = require("cors");
 const swaggerUi = require("swagger-ui-express");
 const YAML = require("yamljs");
 const path = require("path");
+const fs = require("fs");
 const { PORT } = require("./config/env");
 const connectDB = require("./config/db");
 const healthRoutes = require("./routes/healthRoutes");
@@ -10,18 +11,33 @@ const productRoutes = require("./routes/productRoutes");
 
 const app = express();
 
-// Load OpenAPI specification
-const swaggerDocument = YAML.load(path.join(__dirname, "../openapi.yaml"));
+// Load OpenAPI spec safely so docs issues do not crash the service.
+const openApiCandidates = [
+  path.join(__dirname, "../openapi.yaml"),
+  path.join(__dirname, "../../openapi.yaml"),
+];
+
+let swaggerDocument = null;
+for (const candidate of openApiCandidates) {
+  if (fs.existsSync(candidate)) {
+    swaggerDocument = YAML.load(candidate);
+    break;
+  }
+}
 
 // Middleware
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
 // Swagger UI documentation
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: "Product Service API Docs"
-}));
+if (swaggerDocument) {
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: "Product Service API Docs"
+  }));
+} else {
+  console.warn("OpenAPI spec not found. /api-docs is disabled.");
+}
 
 // Routes
 app.use("/api/products/health", healthRoutes);
