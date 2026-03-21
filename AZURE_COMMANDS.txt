@@ -1,0 +1,45 @@
+frontend azure config
+az containerapp show `
+  --name frontend `
+  --resource-group cloudcart-rg `
+  --query "properties.template.scale"
+
+add one replica to frontend
+  az containerapp update `
+  --name frontend `
+  --resource-group cloudcart-rg `
+  --min-replicas 1
+
+  remove replicas from every service 
+  $resourceGroup = "cloudcart-rg"
+
+$apps = az containerapp list `
+  --resource-group $resourceGroup `
+  --query "[].name" -o tsv
+
+foreach ($app in $apps) {
+    Write-Host "Stopping $app..."
+    az containerapp update `
+        --name $app `
+        --resource-group $resourceGroup `
+        --min-replicas 0
+}
+
+Write-Host "✅ All container apps scaled to 0"
+
+add one replica to every service 
+$resourceGroup = "cloudcart-rg"
+
+$apps = az containerapp list `
+  --resource-group $resourceGroup `
+  --query "[].name" -o tsv
+
+foreach ($app in $apps) {
+    Write-Host "Starting $app..."
+    az containerapp update `
+        --name $app `
+        --resource-group $resourceGroup `
+        --min-replicas 1
+}
+
+Write-Host "✅ All container apps scaled to 1"
