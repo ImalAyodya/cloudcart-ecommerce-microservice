@@ -1,15 +1,7 @@
-version: "3.9"
-
 # ─────────────────────────────────────────────────────────────────────────────
-# CloudCart – full-stack docker-compose
+# CloudCart – Development docker-compose with hot reload
 #
-# Usage:
-#   1. Copy .env.example to .env and fill in your values.
-#   2. Build & run:        docker compose up --build
-#   3. Push to Docker Hub: docker compose push
-#
-# Image naming follows:  <DOCKER_HUB_USERNAME>/<service>:<TAG>
-# Set DOCKER_HUB_USERNAME in your .env (or shell) before pushing.
+# Usage: docker compose -f docker-compose.dev.yml up --build
 # ─────────────────────────────────────────────────────────────────────────────
 
 services:
@@ -25,7 +17,6 @@ services:
 
   # ── Product Service (port 5000) ─────────────────────────────────────────────
   product-service:
-    image: ${DOCKER_HUB_USERNAME:-cloudcart}/product-service:${TAG:-latest}
     build:
       context: ./backend/productService
       dockerfile: Dockerfile
@@ -34,13 +25,15 @@ services:
       - MONGO_URI=${PRODUCT_MONGO_URI:-mongodb://mongo:27017/productdb}
     ports:
       - "5000:5000"
+    volumes:
+      - ./backend/productService:/app
+      - /app/node_modules
+    command: npm run dev
     depends_on:
       - mongo
-    restart: unless-stopped
 
   # ── User Service (port 5001) ────────────────────────────────────────────────
   user-service:
-    image: ${DOCKER_HUB_USERNAME:-cloudcart}/user-service:${TAG:-latest}
     build:
       context: ./backend/userService
       dockerfile: Dockerfile
@@ -51,13 +44,15 @@ services:
       - TOKEN_EXPIRES_IN=${TOKEN_EXPIRES_IN:-7d}
     ports:
       - "5001:5001"
+    volumes:
+      - ./backend/userService:/app
+      - /app/node_modules
+    command: npm run dev
     depends_on:
       - mongo
-    restart: unless-stopped
 
   # ── Payment Service (port 5002) ─────────────────────────────────────────────
   payment-service:
-    image: ${DOCKER_HUB_USERNAME:-cloudcart}/payment-service:${TAG:-latest}
     build:
       context: ./backend/paymentService
       dockerfile: Dockerfile
@@ -65,11 +60,13 @@ services:
       - PORT=5002
     ports:
       - "5002:5002"
-    restart: unless-stopped
+    volumes:
+      - ./backend/paymentService:/app
+      - /app/node_modules
+    command: npm run dev
 
   # ── Order Service (port 5004) ───────────────────────────────────────────────
   order-service:
-    image: ${DOCKER_HUB_USERNAME:-cloudcart}/order-service:${TAG:-latest}
     build:
       context: ./backend/orderService
       dockerfile: Dockerfile
@@ -81,16 +78,18 @@ services:
       - PAYMENT_SERVICE_URL=http://payment-service:5002
     ports:
       - "5004:5004"
+    volumes:
+      - ./backend/orderService:/app
+      - /app/node_modules
+    command: npm run dev
     depends_on:
       - mongo
       - user-service
       - product-service
       - payment-service
-    restart: unless-stopped
 
   # ── Notification Service (port 5003) ────────────────────────────────────────
   notification-service:
-    image: ${DOCKER_HUB_USERNAME:-cloudcart}/notification-service:${TAG:-latest}
     build:
       context: ./backend/notificationService
       dockerfile: Dockerfile
@@ -100,11 +99,13 @@ services:
       - EMAIL_PASSWORD=${EMAIL_PASSWORD}
     ports:
       - "5003:5003"
-    restart: unless-stopped
+    volumes:
+      - ./backend/notificationService:/app
+      - /app/node_modules
+    command: npm run dev
 
   # ── API Gateway (port 3000) ─────────────────────────────────────────────────
   api-gateway:
-    image: ${DOCKER_HUB_USERNAME:-cloudcart}/api-gateway:${TAG:-latest}
     build:
       context: ./backend/apiGateway
       dockerfile: Dockerfile
@@ -117,27 +118,31 @@ services:
       - NOTIFICATION_SERVICE_URL=http://notification-service:5003
     ports:
       - "3000:3000"
+    volumes:
+      - ./backend/apiGateway:/app
+      - /app/node_modules
+    command: npm run dev
     depends_on:
       - product-service
       - user-service
       - order-service
       - payment-service
       - notification-service
-    restart: unless-stopped
 
-  # ── Frontend (port 80) ──────────────────────────────────────────────────────
+  # ── Frontend (port 5173 - Vite dev server) ──────────────────────────────────
   frontend:
-    image: ${DOCKER_HUB_USERNAME:-cloudcart}/frontend:${TAG:-latest}
     build:
       context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        - VITE_API_GATEWAY_URL=${VITE_API_GATEWAY_URL:-http://localhost:3000}
+      dockerfile: Dockerfile.dev
+    environment:
+      - VITE_API_GATEWAY_URL=http://localhost:3000
     ports:
-      - "80:80"
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     depends_on:
       - api-gateway
-    restart: unless-stopped
 
 volumes:
   mongo-data:
