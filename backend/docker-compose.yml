@@ -22,6 +22,7 @@ services:
     environment:
       PORT: 5000
       MONGO_URI: ${PRODUCT_MONGO_URI:-mongodb+srv://sithmaka:sithmaka1122@cluster.pvqvoqf.mongodb.net/productdb?retryWrites=true&w=majority}
+      USER_SERVICE_URL: http://user-service:5001
 
   user-service:
     build: ./userService

@@ -7,6 +7,11 @@
 
 import API from "../config/api";
 
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 // Get all products
 export const getAllProducts = async () => {
   try {
@@ -53,6 +58,7 @@ export const createProduct = async (productData) => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...getAuthHeaders(),
       },
       body: JSON.stringify(productData),
     });
@@ -85,6 +91,7 @@ export const updateProduct = async (id, productData) => {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
+        ...getAuthHeaders(),
       },
       body: JSON.stringify(productData),
     });
@@ -101,7 +108,10 @@ export const updateProduct = async (id, productData) => {
 export const deleteProduct = async (id) => {
   try {
     const response = await fetch(`${API.products}/${id}`, {
-      method: "DELETE"
+      method: "DELETE",
+      headers: {
+        ...getAuthHeaders(),
+      },
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
@@ -119,6 +129,7 @@ export const updateProductQty = async (id, qty) => {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
+        ...getAuthHeaders(),
       },
       body: JSON.stringify({ qty }),
     });

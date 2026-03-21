@@ -1,0 +1,3 @@
+order service - https://order-service.internal.gentleglacier-0204e61b.southeastasia.azurecontainerapps.io
+frontend - https://frontend.gentleglacier-0204e61b.southeastasia.azurecontainerapps.io
+payment service - https://payment-service.gentleglacier-0204e61b.southeastasia.azurecontainerapps.io

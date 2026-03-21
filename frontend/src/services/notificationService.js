@@ -1,5 +1,10 @@
 import API from "../config/api";
 
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 // Trigger low stock alert email directly via notification service
 export const sendLowStockAlert = async (products, recipientEmail) => {
   const payload = {
@@ -43,7 +48,10 @@ export const sendProductStockReport = async (recipientEmail) => {
   const payload = recipientEmail ? { recipientEmail } : {};
   const response = await fetch(`${API.products}/notify/stock-report`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+    },
     body: JSON.stringify(payload),
   });
   const data = await response.json().catch(() => ({}));

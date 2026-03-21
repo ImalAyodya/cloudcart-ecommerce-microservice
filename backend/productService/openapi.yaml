@@ -9,9 +9,9 @@ info:
     name: CloudCart Team
 
 servers:
-  - url: http://localhost:5001/api/products
+  - url: http://localhost:5000/api/products
     description: Local development server
-  - url: https://product-service.agreeableriver-79a7139e.southeastasia.azurecontainerapps.io/api/products
+  - url: https://product-service.gentleglacier-0204e61b.southeastasia.azurecontainerapps.io/api/products
     description: Production server
 
 tags:
@@ -30,6 +30,8 @@ paths:
       summary: Create a new product
       description: Creates a new product in the catalog
       operationId: createProduct
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -109,6 +111,8 @@ paths:
       summary: Send stock report
       description: Generates and sends a stock report to the notification service
       operationId: sendStockReport
+      security:
+        - bearerAuth: []
       requestBody:
         required: false
         content:
@@ -120,7 +124,7 @@ paths:
                   type: string
                   format: email
                   description: Email address to send the stock report to
-                  example: admin@cloudcart.com
+                  example: sithma2002@gmail.com
       responses:
         '200':
           description: Stock report sent successfully
@@ -183,6 +187,8 @@ paths:
       summary: Update product
       description: Updates an existing product by its ID
       operationId: updateProduct
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/ProductId'
       requestBody:
@@ -223,6 +229,8 @@ paths:
       summary: Delete product
       description: Deletes a product by its ID
       operationId: deleteProduct
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/ProductId'
       responses:
@@ -256,6 +264,8 @@ paths:
       summary: Update product quantity
       description: Updates the stock quantity of a product
       operationId: updateProductQty
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/ProductId'
       requestBody:
@@ -333,6 +343,8 @@ paths:
       summary: Reduce product stock
       description: Reduces the stock of a product by a specified amount
       operationId: reduceProductStock
+      security:
+        - bearerAuth: []
       parameters:
         - $ref: '#/components/parameters/ProductId'
       requestBody:
@@ -386,6 +398,12 @@ components:
         type: string
         pattern: '^[a-fA-F0-9]{24}$'
         example: 507f1f77bcf86cd799439011
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
 
   schemas:
     ProductInput:
