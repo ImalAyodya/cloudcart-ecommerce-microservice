@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const {
   checkProductAvailability,
   getPaymentByTransactionId,
+  reduceStock,
 } = require("../services/externalServices");
 
 const toErrorLogPayload = (error) => ({
@@ -274,6 +275,20 @@ exports.createOrder = async (req, res) => {
       OrderNumber: paymentOrderNumber,
     });
     await order.save();
+
+    // Reduce stock for each product
+    for (const item of normalizedProducts) {
+      try {
+        await reduceStock(item.productId, item.quantity);
+      } catch (stockError) {
+        console.error("[OrderController.createOrder] Stock reduction failed", {
+          ...toErrorLogPayload(stockError),
+          productId: item.productId,
+          quantity: item.quantity,
+          orderId: order._id,
+        });
+      }
+    }
 
     res.status(201).json({
       message: "Order created",
