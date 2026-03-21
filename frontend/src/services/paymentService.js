@@ -71,6 +71,24 @@ export const getPaymentById = async (paymentId) => {
   }
 };
 
+// Get payment by transaction ID
+export const getPaymentByTransactionId = async (transactionId) => {
+  try {
+    const token = localStorage.getItem("token");
+    const response = await fetch(`${API.payments}/transaction/${transactionId}`, {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("❌ Failed to fetch payment by transaction ID:", error.message);
+    throw error;
+  }
+};
+
 // Update payment status (admin)
 export const updatePaymentStatus = async (paymentId, status) => {
   try {

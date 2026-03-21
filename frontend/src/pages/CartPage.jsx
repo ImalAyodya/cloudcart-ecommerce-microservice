@@ -188,7 +188,7 @@ const CartPage = () => {
               </div>
 
               <button
-                onClick={() => navigate("/checkout")}
+                onClick={() => navigate("/payment")}
                 className="mt-6 w-full flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3.5 rounded-xl transition-colors"
               >
                 Proceed to Checkout

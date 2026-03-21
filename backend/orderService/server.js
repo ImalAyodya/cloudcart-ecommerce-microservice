@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const { PORT } = require("./src/config/env");
 const connectDB = require("./src/config/db");
+const healthRoutes = require("./src/routes/healthRoutes");
 const orderRoutes = require("./src/routes/orderRoutes");
 
 const app = express();
@@ -11,9 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.get("/api/orders/health", (req, res) => {
-  res.status(200).json({ status: "OK", service: "Order Service" });
-});
+app.use("/api/orders/health", healthRoutes);
 app.use("/api/orders", orderRoutes);
 
 process.on("unhandledRejection", (reason) => {

@@ -19,6 +19,7 @@ import CartPage from "./pages/CartPage";
 import OrderCheckoutPage from "./pages/OrderCheckoutPage";
 import OrderSuccessPage from "./pages/OrderSuccessPage";
 import MyOrdersPage from "./pages/MyOrdersPage";
+import OrderDetailPage from "./pages/OrderDetailPage";
 
 // Admin Components
 import AdminLayout from "./components/admin/AdminLayout";
@@ -30,6 +31,7 @@ import AddProduct from "./pages/admin/AddProduct";
 import EditProduct from "./pages/admin/EditProduct";
 import ViewProduct from "./pages/admin/ViewProduct";
 import OrderManagement from "./pages/admin/OrderManagement";
+import AdminOrderDetail from "./pages/admin/AdminOrderDetail";
 import CreateOrder from "./pages/admin/CreateOrder";
 import PaymentManagement from "./pages/admin/PaymentManagement";
 import AdminLogin from "./pages/admin/AdminLogin";
@@ -57,6 +59,7 @@ function AppLayout() {
           <Route path="/checkout" element={<OrderCheckoutPage />} />
           <Route path="/order-success" element={<OrderSuccessPage />} />
           <Route path="/my-orders" element={<MyOrdersPage />} />
+          <Route path="/my-orders/:id" element={<OrderDetailPage />} />
           <Route path="/payment" element={<PaymentPage />} />
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
           <Route path="/payment-failed" element={<PaymentFailedPage />} />
@@ -96,6 +99,7 @@ function App() {
             <Route path="products/:id" element={<ViewProduct />} />
             <Route path="products/:id/edit" element={<EditProduct />} />
             <Route path="orders" element={<OrderManagement />} />
+            <Route path="orders/:id" element={<AdminOrderDetail />} />
             <Route path="orders/create" element={<CreateOrder />} />
             <Route path="payments" element={<PaymentManagement />} />
           </Route>
