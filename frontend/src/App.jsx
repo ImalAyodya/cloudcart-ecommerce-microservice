@@ -60,7 +60,7 @@ function AppLayout() {
           <Route path="/order-success" element={<OrderSuccessPage />} />
           <Route path="/my-orders" element={<MyOrdersPage />} />
           <Route path="/my-orders/:id" element={<OrderDetailPage />} />
-          
+          <Route path="/checkout" element={<OrderCheckoutPage />} />
           <Route path="/payment-success" element={<PaymentSuccessPage />} />
           <Route path="/payment-failed" element={<PaymentFailedPage />} />
         </Routes>
