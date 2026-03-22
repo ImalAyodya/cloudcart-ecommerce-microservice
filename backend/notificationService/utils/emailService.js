@@ -110,7 +110,7 @@ const sendPaymentReceiptEmail = async (recipientEmail, paymentDetails) => {
               </tr>
               <tr>
                 <td style="padding: 10px 0; color: #64748b; font-size: 14px;">Amount</td>
-                <td style="padding: 10px 0; color: #1e293b; font-weight: 600; text-align: right; font-size: 18px;">$${amount}</td>
+                <td style="padding: 10px 0; color: #1e293b; font-weight: 600; text-align: right; font-size: 18px;">Rs. ${amount}</td>
               </tr>
               <tr>
                 <td style="padding: 10px 0; color: #64748b; font-size: 14px;">Payment Method</td>
@@ -165,7 +165,7 @@ const sendOrderConfirmationEmail = async (recipientEmail, orderDetails) => {
     <tr>
       <td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${item.name}</td>
       <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: center;">${item.quantity}</td>
-      <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right;">$${item.price}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right;">Rs. ${item.price}</td>
     </tr>
   `).join('');
 

@@ -372,6 +372,7 @@ const OrderCheckoutPage = () => {
                     checked={paymentMethod === "CARD"}
                     onChange={(e) => setPaymentMethod(e.target.value)}
                     className="mr-2"
+                    disabled
                   />
                   <span className="font-semibold text-slate-800">Card Payment</span>
                   <p className="text-xs text-slate-500 mt-1">Pay now with debit or credit card</p>
@@ -391,6 +392,7 @@ const OrderCheckoutPage = () => {
                     checked={paymentMethod === "COD"}
                     onChange={(e) => setPaymentMethod(e.target.value)}
                     className="mr-2"
+                    disabled
                   />
                   <span className="font-semibold text-slate-800">Cash on Delivery</span>
                   <p className="text-xs text-slate-500 mt-1">Pay when your package arrives</p>
