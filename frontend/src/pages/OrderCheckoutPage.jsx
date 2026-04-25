@@ -32,6 +32,8 @@ const OrderCheckoutPage = () => {
 
   const buyNowItem = location.state?.buyNowItem || null;
   const paymentFromState = location.state?.payment || null;
+  const paymentEmailFromState =
+    location.state?.email || paymentFromState?.email || "";
   const transactionIdFromState =
     location.state?.transactionId || paymentFromState?.transactionId || "";
   const paymentMethodFromState = normalizePaymentMethod(
@@ -47,7 +49,7 @@ const OrderCheckoutPage = () => {
 
   const [customer, setCustomer] = useState({
     fullName: user?.name || "",
-    email: user?.email || "",
+    email: paymentEmailFromState || user?.email || "",
     phone: user?.phone || "",
     address: "",
     city: "",
@@ -64,7 +66,7 @@ const OrderCheckoutPage = () => {
         setCustomer((prev) => ({
           ...prev,
           fullName: data?.name || prev.fullName,
-          email: data?.email || prev.email,
+          email: paymentEmailFromState || data?.email || prev.email,
           phone: data?.phone || prev.phone,
           address: data?.address || prev.address,
         }));
@@ -74,7 +76,7 @@ const OrderCheckoutPage = () => {
     };
 
     fetchCustomerDetails();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, paymentEmailFromState]);
   const [paymentMethod, setPaymentMethod] = useState(
     paymentMethodFromState || "CARD"
   );
@@ -147,6 +149,7 @@ const OrderCheckoutPage = () => {
       let finalTransactionId = transactionIdFromState;
       let finalPaymentMethod =
         paymentMethodFromState || normalizePaymentMethod(paymentMethod);
+      let finalEmail = paymentEmailFromState || customer.email.trim();
 
       // If payment was not done on /payment page, process it here.
       if (!finalTransactionId) {
@@ -170,6 +173,9 @@ const OrderCheckoutPage = () => {
         finalPaymentMethod =
           normalizePaymentMethod(paymentResponse?.paymentMethod) ||
           finalPaymentMethod;
+
+        finalEmail =
+          (paymentResponse?.email || "").toString().trim() || finalEmail;
       }
 
       if (!finalTransactionId) {
@@ -194,7 +200,10 @@ const OrderCheckoutPage = () => {
           items: checkoutItems,
           totalAmount,
           shippingFee,
-          customer,
+          customer: {
+            ...customer,
+            email: finalEmail,
+          },
           paymentMethod: finalPaymentMethod || "N/A",
           transactionId: finalTransactionId,
         },
@@ -283,7 +292,7 @@ const OrderCheckoutPage = () => {
                   <input
                     type="email"
                     value={customer.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
+                    readOnly
                     className={`mt-1 w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 ${
                       errors.email
                         ? "border-red-300 focus:ring-red-100"

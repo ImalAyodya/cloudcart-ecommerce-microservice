@@ -10,6 +10,17 @@ const ProductManagement = () => {
 
   const { user } = useUser();
 
+  const getRecipientEmail = () => {
+    if (user?.email) return user.email;
+    try {
+      const storedAdmin = localStorage.getItem("adminUser");
+      const parsedAdmin = storedAdmin ? JSON.parse(storedAdmin) : null;
+      return parsedAdmin?.email || "";
+    } catch {
+      return "";
+    }
+  };
+
   const LOW_STOCK_THRESHOLD = Number(import.meta.env.VITE_LOW_STOCK_THRESHOLD || 5);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -56,7 +67,8 @@ const ProductManagement = () => {
   );
 
   const handleSendStockReport = async () => {
-    if (!user?.email) {
+    const recipientEmail = getRecipientEmail();
+    if (!recipientEmail) {
       setError("Please log in to send reports");
       return;
     }
@@ -64,7 +76,7 @@ const ProductManagement = () => {
     setActionMessage("");
     setError("");
     try {
-      await sendProductStockReport(user?.email);
+      await sendProductStockReport(recipientEmail);
       setActionMessage("Stock report email requested.");
     } catch (err) {
       setError("Failed to send stock report");
@@ -73,7 +85,8 @@ const ProductManagement = () => {
   };
 
   const handleSendLowStockAlert = async () => {
-    if (!user?.email) {
+    const recipientEmail = getRecipientEmail();
+    if (!recipientEmail) {
       setError("Please log in to send alerts");
       return;
     }
@@ -93,7 +106,7 @@ const ProductManagement = () => {
           category: p.category,
           threshold: LOW_STOCK_THRESHOLD,
         })),
-        user?.email
+        recipientEmail
       );
       setActionMessage("Low stock alert requested.");
     } catch (err) {

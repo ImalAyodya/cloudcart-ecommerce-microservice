@@ -127,7 +127,6 @@ exports.createOrder = async (req, res) => {
     const { products, transactionId: requestedTransactionId } = req.body;
     const authHeader = req.headers.authorization;
     const userId = normalizeId(req.user?.id);
-    const userEmail = normalizeId(req.user?.email).toLowerCase();
     const isAdmin = isAdminUser(req);
 
     if (!userId) {
@@ -221,7 +220,6 @@ exports.createOrder = async (req, res) => {
     const paymentStatus = String(paymentDetails?.status || "").trim().toUpperCase();
     const paymentAmount = Number(paymentDetails?.amount);
     const paymentUserId = normalizeId(paymentDetails?.userId);
-    const paymentEmail = normalizeId(paymentDetails?.email).toLowerCase();
 
     if (!transactionId) {
       return res.status(502).json({
@@ -240,12 +238,6 @@ exports.createOrder = async (req, res) => {
     if (!isAdmin && paymentUserId && paymentUserId !== userId) {
       return res.status(403).json({
         error: "Payment does not belong to authenticated user",
-      });
-    }
-
-    if (!isAdmin && paymentEmail && userEmail && paymentEmail !== userEmail) {
-      return res.status(403).json({
-        error: "Payment email does not match authenticated user",
       });
     }
 
