@@ -13,23 +13,20 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 2  # Needed so git diff HEAD~1 HEAD works
+          fetch-depth: 0  # Needed so we can diff full push range reliably
 
       # Detect which services have changed files
       - name: Detect changed services
         id: changes
         run: |
-          CHANGED=$(git diff --name-only HEAD~1 HEAD)
-          echo "Changed files:"
-          echo "$CHANGED"
-
-          echo "product_service=$(echo "$CHANGED" | grep -q '^backend/productService/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-          echo "user_service=$(echo "$CHANGED" | grep -q '^backend/userService/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-          echo "api_gateway=$(echo "$CHANGED" | grep -q '^backend/apiGateway/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-          echo "payment_service=$(echo "$CHANGED" | grep -q '^backend/paymentService/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-          echo "order_service=$(echo "$CHANGED" | grep -q '^backend/orderService/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-          echo "notification_service=$(echo "$CHANGED" | grep -q '^backend/notificationService/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
-          echo "frontend=$(echo "$CHANGED" | grep -q '^frontend/' && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+          echo "Forcing full rebuild: all services marked as changed."
+          echo "product_service=true" >> $GITHUB_OUTPUT
+          echo "user_service=true" >> $GITHUB_OUTPUT
+          echo "api_gateway=true" >> $GITHUB_OUTPUT
+          echo "payment_service=true" >> $GITHUB_OUTPUT
+          echo "order_service=true" >> $GITHUB_OUTPUT
+          echo "notification_service=true" >> $GITHUB_OUTPUT
+          echo "frontend=true" >> $GITHUB_OUTPUT
 
       - name: Login to Azure Container Registry
         run: echo ${{ secrets.AZURE_REGISTRY_PASSWORD }} | docker login ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }} -u ${{ secrets.AZURE_REGISTRY_USERNAME }} --password-stdin

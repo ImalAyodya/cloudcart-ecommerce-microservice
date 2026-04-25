@@ -16,6 +16,7 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 COPY --from=build /app/node_modules ./node_modules
 COPY package*.json ./
+COPY openapi.yaml ./
 COPY src ./src
 
 USER appuser
