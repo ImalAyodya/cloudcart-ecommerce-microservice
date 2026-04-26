@@ -1,0 +1,78 @@
+services:
+  api-gateway:
+    build: ./apiGateway
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      PRODUCT_SERVICE_URL: http://product-service:5000
+      USER_SERVICE_URL: http://user-service:5001
+      ORDER_SERVICE_URL: http://order-service:5004
+      PAYMENT_SERVICE_URL: http://payment-service:5002
+    depends_on:
+      - order-service
+      - product-service
+      - user-service
+      - payment-service
+
+  product-service:
+    build: ./productService
+    ports:
+      - "5000:5000"
+    environment:
+      PORT: 5000
+      MONGO_URI: ${PRODUCT_MONGO_URI:-mongodb+srv://sithmaka:sithmaka1122@cluster.pvqvoqf.mongodb.net/productdb?retryWrites=true&w=majority}
+
+  user-service:
+    build: ./userService
+    ports:
+      - "5001:5001"
+    environment:
+      PORT: 5001
+      MONGO_URI: mongodb://mongo-user:27017/userdb
+      JWT_SECRET: changeme
+    depends_on:
+      - mongo-user
+
+  order-service:
+    build: ./orderService
+    ports:
+      - "5004:5004"
+    environment:
+      PORT: 5004
+      MONGO_URI: mongodb://mongo-order:27017/orderdb
+      USER_SERVICE_URL: http://user-service:5001
+      PRODUCT_SERVICE_URL: http://product-service:5000
+      PAYMENT_SERVICE_URL: http://payment-service:5002
+    depends_on:
+      - mongo-order
+      - product-service
+      - user-service
+      - payment-service
+
+  payment-service:
+    build: ./paymentService
+    ports:
+      - "5002:5002"
+    environment:
+      PORT: 5002
+
+  mongo-product:
+    image: mongo:7
+    volumes:
+      - mongo-product-data:/data/db
+
+  mongo-user:
+    image: mongo:7
+    volumes:
+      - mongo-user-data:/data/db
+
+  mongo-order:
+    image: mongo:7
+    volumes:
+      - mongo-order-data:/data/db
+
+volumes:
+  mongo-product-data:
+  mongo-user-data:
+  mongo-order-data:

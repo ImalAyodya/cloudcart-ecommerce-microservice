@@ -1,0 +1,148 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# CloudCart – Development docker-compose with hot reload
+#
+# Usage: docker compose -f docker-compose.dev.yml up --build
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── Shared MongoDB ──────────────────────────────────────────────────────────
+  mongo:
+    image: mongo:7.0
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "27017:27017"
+
+  # ── Product Service (port 5000) ─────────────────────────────────────────────
+  product-service:
+    build:
+      context: ./backend/productService
+      dockerfile: Dockerfile
+    environment:
+      - PORT=5000
+      - MONGO_URI=${PRODUCT_MONGO_URI:-mongodb://mongo:27017/productdb}
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend/productService:/app
+      - /app/node_modules
+    command: npm run dev
+    depends_on:
+      - mongo
+
+  # ── User Service (port 5001) ────────────────────────────────────────────────
+  user-service:
+    build:
+      context: ./backend/userService
+      dockerfile: Dockerfile
+    environment:
+      - PORT=5001
+      - MONGO_URI=${USER_MONGO_URI:-mongodb://mongo:27017/userdb}
+      - JWT_SECRET=${JWT_SECRET:-changeme_please_in_production}
+      - TOKEN_EXPIRES_IN=${TOKEN_EXPIRES_IN:-7d}
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./backend/userService:/app
+      - /app/node_modules
+    command: npm run dev
+    depends_on:
+      - mongo
+
+  # ── Payment Service (port 5002) ─────────────────────────────────────────────
+  payment-service:
+    build:
+      context: ./backend/paymentService
+      dockerfile: Dockerfile
+    environment:
+      - PORT=5002
+    ports:
+      - "5002:5002"
+    volumes:
+      - ./backend/paymentService:/app
+      - /app/node_modules
+    command: npm run dev
+
+  # ── Order Service (port 5004) ───────────────────────────────────────────────
+  order-service:
+    build:
+      context: ./backend/orderService
+      dockerfile: Dockerfile
+    environment:
+      - PORT=5004
+      - MONGO_URI=${ORDER_MONGO_URI:-mongodb://mongo:27017/orderdb}
+      - USER_SERVICE_URL=http://user-service:5001
+      - PRODUCT_SERVICE_URL=http://product-service:5000
+      - PAYMENT_SERVICE_URL=http://payment-service:5002
+    ports:
+      - "5004:5004"
+    volumes:
+      - ./backend/orderService:/app
+      - /app/node_modules
+    command: npm run dev
+    depends_on:
+      - mongo
+      - user-service
+      - product-service
+      - payment-service
+
+  # ── Notification Service (port 5003) ────────────────────────────────────────
+  notification-service:
+    build:
+      context: ./backend/notificationService
+      dockerfile: Dockerfile
+    environment:
+      - PORT=5003
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}
+    ports:
+      - "5003:5003"
+    volumes:
+      - ./backend/notificationService:/app
+      - /app/node_modules
+    command: npm run dev
+
+  # ── API Gateway (port 3000) ─────────────────────────────────────────────────
+  api-gateway:
+    build:
+      context: ./backend/apiGateway
+      dockerfile: Dockerfile
+    environment:
+      - PORT=3000
+      - PRODUCT_SERVICE_URL=http://product-service:5000
+      - USER_SERVICE_URL=http://user-service:5001
+      - ORDER_SERVICE_URL=http://order-service:5004
+      - PAYMENT_SERVICE_URL=http://payment-service:5002
+      - NOTIFICATION_SERVICE_URL=http://notification-service:5003
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend/apiGateway:/app
+      - /app/node_modules
+    command: npm run dev
+    depends_on:
+      - product-service
+      - user-service
+      - order-service
+      - payment-service
+      - notification-service
+
+  # ── Frontend (port 5173 - Vite dev server) ──────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    environment:
+      - VITE_API_GATEWAY_URL=http://localhost:3000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - api-gateway
+
+volumes:
+  mongo-data:

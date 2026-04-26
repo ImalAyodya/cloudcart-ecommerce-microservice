@@ -247,8 +247,6 @@ const OrderCheckoutPage = () => {
     );
   }
 
-  //UI Changes
-
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="bg-gradient-to-r from-slate-900 to-sky-900 py-10">

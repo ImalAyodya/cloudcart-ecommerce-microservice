@@ -4,7 +4,6 @@ const cors = require('cors');
 require('dotenv').config();
 const paymentRoutes = require('./routes/paymentRoutes');
 const healthRoutes = require('./routes/healthRoutes');
-const { setupSwagger } = require('./docs/swagger');
 const app = express();
 
 
@@ -12,9 +11,6 @@ const app = express();
 // Middleware
 app.use(cors());
 app.use(express.json());
-
-// Swagger docs (mounted before dynamic payment routes)
-setupSwagger(app);
 
 // MongoDB connection
 const mongoURI = process.env.MONGO_URI; // Change as needed

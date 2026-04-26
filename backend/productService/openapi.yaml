@@ -1,0 +1,539 @@
+openapi: 3.0.3
+info:
+  title: CloudCart Product Service API
+  description: |
+    API for managing products in the CloudCart e-commerce platform.
+    This service handles product CRUD operations, inventory management, and stock notifications.
+  version: 1.0.0
+  contact:
+    name: CloudCart Team
+
+servers:
+  - url: http://localhost:5001/api/products
+    description: Local development server
+  - url: https://product-service.agreeableriver-79a7139e.southeastasia.azurecontainerapps.io/api/products
+    description: Production server
+
+tags:
+  - name: Products
+    description: Product management operations
+  - name: Inventory
+    description: Stock and inventory management
+  - name: Notifications
+    description: Stock notification operations
+
+paths:
+  /:
+    post:
+      tags:
+        - Products
+      summary: Create a new product
+      description: Creates a new product in the catalog
+      operationId: createProduct
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductInput'
+      responses:
+        '201':
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Product created
+                  product:
+                    $ref: '#/components/schemas/Product'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      tags:
+        - Products
+      summary: Get all products
+      description: Retrieves a list of all products in the catalog
+      operationId: getAllProducts
+      responses:
+        '200':
+          description: List of products retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  products:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /stats:
+    get:
+      tags:
+        - Inventory
+      summary: Get product statistics
+      description: Retrieves statistics about products including total, active, low stock, and out of stock counts
+      operationId: getProductStats
+      responses:
+        '200':
+          description: Product statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductStats'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /notify/stock-report:
+    post:
+      tags:
+        - Notifications
+      summary: Send stock report
+      description: Generates and sends a stock report to the notification service
+      operationId: sendStockReport
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                recipientEmail:
+                  type: string
+                  format: email
+                  description: Email address to send the stock report to
+                  example: admin@cloudcart.com
+      responses:
+        '200':
+          description: Stock report sent successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Stock report sent
+                  summary:
+                    $ref: '#/components/schemas/ProductStats'
+                  lowStockProducts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LowStockProduct'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /{id}:
+    get:
+      tags:
+        - Products
+      summary: Get product by ID
+      description: Retrieves a specific product by its ID
+      operationId: getProductById
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      responses:
+        '200':
+          description: Product retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  product:
+                    $ref: '#/components/schemas/Product'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags:
+        - Products
+      summary: Update product
+      description: Updates an existing product by its ID
+      operationId: updateProduct
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductInput'
+      responses:
+        '200':
+          description: Product updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Product updated
+                  product:
+                    $ref: '#/components/schemas/Product'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - Products
+      summary: Delete product
+      description: Deletes a product by its ID
+      operationId: deleteProduct
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      responses:
+        '200':
+          description: Product deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Product deleted
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /{id}/qty:
+    patch:
+      tags:
+        - Inventory
+      summary: Update product quantity
+      description: Updates the stock quantity of a product
+      operationId: updateProductQty
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - qty
+              properties:
+                qty:
+                  type: number
+                  description: New stock quantity
+                  example: 100
+      responses:
+        '200':
+          description: Product quantity updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Product quantity updated
+                  product:
+                    $ref: '#/components/schemas/Product'
+        '400':
+          description: Invalid input (qty must be a number)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /{id}/availability:
+    get:
+      tags:
+        - Inventory
+      summary: Get product availability
+      description: Retrieves the availability information of a product including price, stock, and status
+      operationId: getProductAvailability
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      responses:
+        '200':
+          description: Product availability retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductAvailability'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /{id}/reduce-stock:
+    patch:
+      tags:
+        - Inventory
+      summary: Reduce product stock
+      description: Reduces the stock of a product by a specified amount
+      operationId: reduceProductStock
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+              properties:
+                amount:
+                  type: number
+                  minimum: 1
+                  description: Amount to reduce from stock
+                  example: 5
+      responses:
+        '200':
+          description: Stock reduced successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Stock reduced
+                  product:
+                    $ref: '#/components/schemas/Product'
+        '400':
+          description: Invalid input or insufficient stock
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  parameters:
+    ProductId:
+      name: id
+      in: path
+      required: true
+      description: MongoDB ObjectId of the product
+      schema:
+        type: string
+        pattern: '^[a-fA-F0-9]{24}$'
+        example: 507f1f77bcf86cd799439011
+
+  schemas:
+    ProductInput:
+      type: object
+      required:
+        - name
+        - description
+        - price
+        - category
+        - stock
+      properties:
+        name:
+          type: string
+          description: Product name
+          example: Wireless Bluetooth Headphones
+        description:
+          type: string
+          description: Product description
+          example: High-quality wireless headphones with noise cancellation
+        price:
+          type: number
+          format: float
+          minimum: 0
+          description: Product price
+          example: 99.99
+        category:
+          type: string
+          description: Product category
+          example: Electronics
+        stock:
+          type: integer
+          minimum: 0
+          description: Available stock quantity
+          example: 50
+        sku:
+          type: string
+          description: Stock Keeping Unit identifier
+          example: WBH-001
+        status:
+          type: string
+          enum:
+            - Active
+            - Inactive
+            - Draft
+          default: Active
+          description: Product status
+          example: Active
+        featured:
+          type: boolean
+          default: false
+          description: Whether the product is featured
+          example: false
+        imageUrl:
+          type: string
+          format: uri
+          description: URL of the product image
+          example: https://example.com/images/headphones.jpg
+
+    Product:
+      allOf:
+        - $ref: '#/components/schemas/ProductInput'
+        - type: object
+          properties:
+            _id:
+              type: string
+              pattern: '^[a-fA-F0-9]{24}$'
+              description: MongoDB ObjectId
+              example: 507f1f77bcf86cd799439011
+            createdAt:
+              type: string
+              format: date-time
+              description: Timestamp when the product was created
+              example: '2024-01-15T10:30:00.000Z'
+            updatedAt:
+              type: string
+              format: date-time
+              description: Timestamp when the product was last updated
+              example: '2024-01-15T10:30:00.000Z'
+            __v:
+              type: integer
+              description: Version key
+              example: 0
+
+    ProductStats:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total number of products
+          example: 150
+        active:
+          type: integer
+          description: Number of active products
+          example: 120
+        lowStock:
+          type: integer
+          description: Number of products with low stock
+          example: 15
+        outOfStock:
+          type: integer
+          description: Number of out-of-stock products
+          example: 5
+
+    ProductAvailability:
+      type: object
+      properties:
+        price:
+          type: number
+          format: float
+          description: Product price
+          example: 99.99
+        stock:
+          type: integer
+          description: Available stock quantity
+          example: 50
+        availability:
+          type: string
+          description: Product availability status
+          example: Active
+
+    LowStockProduct:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Product ID
+          example: 507f1f77bcf86cd799439011
+        name:
+          type: string
+          description: Product name
+          example: Wireless Bluetooth Headphones
+        stock:
+          type: integer
+          description: Current stock level
+          example: 3
+        status:
+          type: string
+          description: Product status
+          example: Low Stock
+        category:
+          type: string
+          description: Product category
+          example: Electronics
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: Product not found
