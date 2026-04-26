@@ -119,7 +119,7 @@ const ProductManagement = () => {
 
   return (
     <div>
-      <AdminHeader title="Product Management" />
+      <AdminHeader title="Product Management system Update for CI/CD" />
 
       <div className="p-6">
         {loading && <div className="mb-4 text-center text-slate-500">Loading products...</div>}
